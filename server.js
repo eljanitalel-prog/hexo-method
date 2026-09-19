@@ -19,14 +19,13 @@ const upload = multer({
 });
 
 app.use(express.static(path.join(__dirname)));
-app.get('/health', (_req, res) => res.json({ ok: true, ffmpeg: true, version: '5.0' }));
+app.get('/health', (_req, res) => res.json({ ok: true, ffmpeg: true, version: '5.2' }));
 
 function num(v, fallback, min, max) {
   const n = Number(v);
   if (!Number.isFinite(n)) return fallback;
   return Math.max(min, Math.min(max, n));
 }
-
 function safePreset(v) {
   return ['ultrafast','superfast','veryfast','faster','fast','medium'].includes(v) ? v : 'superfast';
 }
@@ -35,7 +34,6 @@ function safeAudio(v) { return Math.round(num(v, 192, 64, 320)); }
 function safeVideoBitrate(v) { return Math.round(num(v, 8000, 500, 50000)); }
 function safeRes(v) { return ['original','1080x1920','720x1280'].includes(v) ? v : 'original'; }
 function safeAspect(v) { return ['crop','fit','keep'].includes(v) ? v : 'keep'; }
-function safePos(v) { return ['bottom-right','bottom-left','top-right','top-left'].includes(v) ? v : 'bottom-right'; }
 
 function parseFps(rate) {
   if (!rate || !rate.includes('/')) return Number(rate) || 0;
@@ -75,32 +73,19 @@ function metaFromProbe(probe, sizeBytes) {
   };
 }
 
-function buildFilter({ resolution, aspect, watermark, position }) {
-  const filters = [];
-  if (resolution !== 'original') {
-    const [w,h] = resolution.split('x').map(Number);
-    if (aspect === 'crop') {
-      filters.push(`scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h}`);
-    } else if (aspect === 'fit') {
-      filters.push(`scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2:color=black`);
-    } else {
-      filters.push(`scale=${w}:${h}:force_original_aspect_ratio=decrease`);
-    }
+function buildFilter({ resolution, aspect }) {
+  if (resolution === 'original') return null;
+  const [w,h] = resolution.split('x').map(Number);
+  if (aspect === 'crop') {
+    return `scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h}`;
   }
-  if (watermark) {
-    const xy = {
-      'bottom-right': 'x=w-tw-28:y=h-th-28',
-      'bottom-left': 'x=28:y=h-th-28',
-      'top-right': 'x=w-tw-28:y=28',
-      'top-left': 'x=28:y=28'
-    }[position] || 'x=w-tw-28:y=h-th-28';
-    const text = 'UPLOAD METHOD BY @hexo_orig';
-    filters.push(`drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:text='${text}':fontsize=28:fontcolor=white@0.86:box=1:boxcolor=black@0.42:boxborderw=8:${xy}`);
+  if (aspect === 'fit') {
+    return `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2:color=black`;
   }
-  return filters.length ? filters.join(',') : null;
+  return `scale=${w}:${h}:force_original_aspect_ratio=decrease`;
 }
 
-function ffmpegArgs(input, output, opts, duration) {
+function ffmpegArgs(input, output, opts) {
   const args = [
     '-hide_banner','-y','-i',input,
     '-map','0:v:0','-map','0:a:0?',
@@ -109,6 +94,7 @@ function ffmpegArgs(input, output, opts, duration) {
     '-crf',String(safeCrf(opts.crf)),
     '-threads','0',
     '-pix_fmt','yuv420p',
+    '-fps_mode','passthrough',
     '-c:a','aac',
     '-b:a',`${safeAudio(opts.audioBitrate)}k`,
     '-ar','48000',
@@ -118,13 +104,17 @@ function ffmpegArgs(input, output, opts, duration) {
   const filter = buildFilter(opts);
   if (filter) args.push('-vf', filter);
 
+  // IMPORTANT: when Preserve Original FPS is enabled, no -r conversion is added.
   if (!opts.preserveFps) {
     const requested = Number(opts.fps);
     if (requested && requested >= 1 && requested <= 120) args.push('-r',String(requested));
   }
 
-  // Video bitrate is only used as a ceiling for the smaller-file preset.
-  if (opts.useBitrate) args.push('-maxrate',`${safeVideoBitrate(opts.videoBitrate)}k`,'-bufsize',`${safeVideoBitrate(opts.videoBitrate)*2}k`);
+  if (opts.useBitrate) {
+    const br = safeVideoBitrate(opts.videoBitrate);
+    args.push('-maxrate',`${br}k`,'-bufsize',`${br * 2}k`);
+  }
+
   args.push('-progress','pipe:1','-nostats',output);
   return args;
 }
@@ -137,10 +127,10 @@ async function cleanupLater(paths, delay = 60 * 60 * 1000) {
 
 app.post('/api/process', upload.single('video'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No video file uploaded.' });
+
   const input = req.file.path;
   const jobId = crypto.randomUUID();
   const output = path.join(JOB_DIR, `${jobId}.mp4`);
-  let finished = false;
 
   res.status(200);
   res.setHeader('Content-Type','application/x-ndjson; charset=utf-8');
@@ -164,17 +154,17 @@ app.post('/api/process', upload.single('video'), async (req, res) => {
     const crf = safeCrf(req.body.crf || ({ max:18, tiktok:19, balanced:21, smaller:24 }[quality] || 19));
     const audioBitrate = safeAudio(req.body.audioBitrate || (quality === 'smaller' ? 128 : 192));
     const videoBitrate = safeVideoBitrate(req.body.videoBitrate || 8000);
-    const watermark = String(req.body.watermark) === 'true';
-    const position = safePos(req.body.watermarkPosition);
     const fps = req.body.fps || 'auto';
     const useBitrate = quality === 'smaller';
 
-    send({ type:'status', stage:'encode', progress:5, message:`Encoding H.264 (${preset}, CRF ${crf})...` });
+    // Watermark/overlay is deliberately ignored in v5.2.
+    // The output video is always clean. Caption is supplied by the frontend only.
+    send({ type:'status', stage:'encode', progress:5, message:`Encoding H.264 (${preset}, CRF ${crf}) — original FPS preserved...` });
 
     const args = ffmpegArgs(input, output, {
       resolution, aspect, preserveFps, fps, preset, crf, audioBitrate,
-      videoBitrate, useBitrate, watermark, position
-    }, originalMeta.duration);
+      videoBitrate, useBitrate
+    });
 
     const proc = spawn('ffmpeg', args, { stdio:['ignore','pipe','pipe'] });
     let stderr = '';
@@ -203,21 +193,33 @@ app.post('/api/process', upload.single('video'), async (req, res) => {
       proc.on('error', reject);
       proc.on('close', resolve);
     });
-    if (code !== 0) throw new Error(stderr.trim().split('\n').slice(-8).join('\n') || `FFmpeg exited with code ${code}`);
+
+    if (code !== 0) {
+      throw new Error(stderr.trim().split('\n').slice(-8).join('\n') || `FFmpeg exited with code ${code}`);
+    }
 
     const stat = await fsp.stat(output);
     send({ type:'status', stage:'finalize', progress:99, message:'Finalizing MP4 output...' });
+
     const outProbe = await runProbe(output);
     const optimizedMeta = metaFromProbe(outProbe, stat.size);
 
+    // Report whether the measured FPS stayed effectively unchanged.
+    const fpsDiff = Math.abs((originalMeta.fps || 0) - (optimizedMeta.fps || 0));
+    const fpsPreserved = !originalMeta.fps || fpsDiff <= Math.max(0.01, originalMeta.fps * 0.01);
+
     send({
-      type:'complete', progress:100,
+      type:'complete',
+      progress:100,
       original: originalMeta,
       optimized: optimizedMeta,
+      fpsPreserved,
+      caption: 'Upload Method → @hexo_orig',
+      watermarkAdded: false,
       downloadUrl:`/api/download/${jobId}`,
       jobId
     });
-    finished = true;
+
     await cleanupLater([input, output]);
     res.end();
   } catch (err) {
@@ -245,6 +247,6 @@ app.use((err, _req, res, _next) => {
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`HEXO METHOD v5 running on port ${PORT}`);
-  console.log('FFmpeg real processing enabled.');
+  console.log(`HEXO METHOD v5.2 running on port ${PORT}`);
+  console.log('FFmpeg real processing enabled; video watermark disabled; original FPS preservation enabled.');
 });

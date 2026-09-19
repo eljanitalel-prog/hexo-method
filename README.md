@@ -1,22 +1,11 @@
-# HEXO METHOD v5 — Railway
+# HEXO METHOD v5.2
 
-Real FFmpeg TikTok optimizer with a speed-first H.264 pipeline.
+Changes:
+- Video watermark/overlay is completely disabled. No `drawtext`, no `UPLOAD METHOD BY @hexo_orig` burned into the video.
+- TikTok caption remains `Upload Method → @hexo_orig` and is returned by `/api/process` for the frontend to display/copy.
+- Preserve Original FPS is the default.
+- FFmpeg uses `-fps_mode passthrough` and does not add `-r` when preserving FPS.
+- Output is H.264/AAC MP4 with CRF 19, superfast, yuv420p, +faststart.
+- Output reports whether measured FPS stayed within 1% of the source.
 
-## Deploy
-Upload/replace the repository files with these files and commit. Railway will rebuild the Docker image.
-
-## Encoding defaults
-- H.264 / libx264
-- TikTok default: CRF 19 + `superfast`
-- Maximum Quality: CRF 18 + `veryfast`
-- Preserve original FPS by default
-- AAC 192 kbps
-- yuv420p
-- +faststart
-- `threads 0` to let FFmpeg use available CPU threads
-
-## Branding
-When the watermark option is enabled, the output gets:
-`UPLOAD METHOD BY @hexo_orig`
-
-Processed files are stored temporarily and scheduled for deletion after 1 hour.
+Replace `server.js`, `package.json`, and `Dockerfile` in the existing GitHub repository. Keep your existing `index.html` if you want to preserve the current UI.
