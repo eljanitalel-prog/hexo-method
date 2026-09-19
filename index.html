@@ -878,7 +878,7 @@
                 <a href="#settings" class="text-sm text-[var(--hexo-text-secondary)] hover:text-[var(--hexo-text)] transition-colors px-2 py-1" data-nav="settings">Settings</a>
                 <a href="#results" class="text-sm text-[var(--hexo-text-secondary)] hover:text-[var(--hexo-text)] transition-colors px-2 py-1" data-nav="results">Results</a>
                 <span class="text-[var(--hexo-border)] mx-1">|</span>
-                <span class="text-xs text-[var(--hexo-text-secondary)] hidden sm:inline">v3.0</span>
+                <span class="text-xs text-[var(--hexo-text-secondary)] hidden sm:inline">v2.0</span>
             </nav>
         </div>
     </header>
@@ -1256,7 +1256,7 @@
                 <span class="w-1 h-1 rounded-full bg-[var(--hexo-border)]"></span>
                 <span>Built for creators</span>
                 <span class="w-1 h-1 rounded-full bg-[var(--hexo-border)]"></span>
-                <span>v3.0</span>
+                <span>v2.0</span>
             </div>
         </div>
     </footer>
@@ -1455,9 +1455,9 @@
                 <div class="comparison-label optimized">
                     Optimized <i class="fas fa-circle text-[var(--hexo-success)]" style="font-size:8px;vertical-align:middle;"></i>
                 </div>
-                <video id="compareVideo" src="${originalUrl}" muted loop playsinline preload="auto"></video>
+                <video id="compareVideo" src="${displayUrl}" muted loop playsinline preload="auto"></video>
                 <div class="comparison-overlay" id="comparisonOverlay">
-                    <video id="compareVideoOverlay" src="${optimizedUrl || originalUrl}" muted loop playsinline preload="auto"></video>
+                    <video id="compareVideoOverlay" src="${displayUrl}" muted loop playsinline preload="auto"></video>
                 </div>
                 <div class="comparison-slider" id="comparisonSlider"></div>
                 <div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-3">
@@ -1528,10 +1528,16 @@
         }
 
         function estimateOutputSize(meta, quality) {
-            // UI estimate only; final size is measured after real FFmpeg processing.
-            const targetMbps = { max: 12, tiktok: 8, balanced: 5, smaller: 3 }[quality] || 8;
-            const audioMbps = 0.192;
-            return Math.round((targetMbps + audioMbps) * 1000 * 1000 / 8 * (meta.duration || 0));
+            // Simulate realistic compression ratios based on quality preset
+            const ratios = {
+                max: 0.85,
+                tiktok: 0.55,
+                balanced: 0.35,
+                smaller: 0.20,
+            };
+            const ratio = ratios[quality] || 0.55;
+            const size = meta.sizeBytes * ratio;
+            return Math.round(size);
         }
 
         function detectFpsFromFile(file) {
@@ -1572,13 +1578,68 @@
             });
         }
 
-        async function extractVideoMeta(file) {
-            const fd = new FormData();
-            fd.append('video', file);
-            const res = await fetch('/api/analyze', { method: 'POST', body: fd });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Could not analyze video');
-            return data;
+
+        function extractVideoMeta(file) {
+            return new Promise((resolve, reject) => {
+                const video = document.createElement('video');
+                video.preload = 'metadata';
+                const objectUrl = URL.createObjectURL(file);
+                let settled = false;
+
+                const finish = (meta) => {
+                    if (settled) return;
+                    settled = true;
+                    URL.revokeObjectURL(objectUrl);
+                    resolve(meta);
+                };
+
+                const fail = (err) => {
+                    if (settled) return;
+                    settled = true;
+                    URL.revokeObjectURL(objectUrl);
+                    reject(err);
+                };
+
+                video.onloadedmetadata = () => {
+                    const duration = Number.isFinite(video.duration) ? video.duration : 0;
+                    const width = video.videoWidth || 0;
+                    const height = video.videoHeight || 0;
+
+                    // Fast browser-side estimate. The backend uses FFprobe during processing
+                    // for the authoritative source/output metadata.
+                    let fps = 30;
+                    if (height >= 1080) fps = 60;
+
+                    const sizeBytes = file.size;
+                    const avgBitrate = duration > 0 ? (sizeBytes * 8) / duration : 0;
+                    const ext = file.name.split('.').pop().toLowerCase();
+
+                    finish({
+                        duration,
+                        durationFormatted: formatDuration(duration),
+                        width,
+                        height,
+                        fps,
+                        sizeBytes,
+                        sizeFormatted: formatFileSize(sizeBytes),
+                        bitrate: avgBitrate,
+                        bitrateFormatted: formatBitrate(avgBitrate),
+                        aspectRatio: width && height ? `${width}:${height}` : '—',
+                        videoCodec: ext === 'webm' ? 'VP8 / VP9' : 'H.264 / H.265',
+                        audioCodec: ext === 'webm' ? 'Opus / Vorbis' : 'AAC / unknown',
+                    });
+                };
+
+                video.onerror = () => fail(new Error('Could not read video metadata'));
+                video.src = objectUrl;
+                video.load();
+
+                setTimeout(() => {
+                    if (!settled && !video.videoWidth) {
+                        fail(new Error('Timeout reading video metadata'));
+                    }
+                }, 5000);
+            });
         }
 
         function showToast(message, type = 'success') {
@@ -1613,112 +1674,120 @@
             }
         }
 
+
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // SIMULATED PROCESSING ENGINE
+        // REAL RAILWAY + FFMPEG PROCESSING
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
         async function startProcessing() {
             if (!state.file || !state.videoMeta || state.processing) return;
+
             state.processing = true;
             state.processed = false;
             document.getElementById('processBtn').disabled = true;
             showSection('processing');
+            document.getElementById('processing').classList.remove('section-hidden');
 
+            const progressFill = document.getElementById('progressFill');
+            const statusText = document.getElementById('processingStatusText');
             const steps = document.querySelectorAll('.progress-step');
-            steps.forEach(s => { s.classList.remove('active', 'done'); s.querySelector('.step-status').textContent = ''; });
-            document.getElementById('progressFill').style.width = '0%';
-            document.getElementById('processingStatusText').textContent = 'Uploading video to HEXO METHOD...';
+            steps.forEach(s => {
+                s.classList.remove('active', 'done');
+                s.querySelector('.step-status').textContent = '';
+            });
+            progressFill.style.width = '2%';
+            statusText.textContent = 'Uploading video to HEXO METHOD...';
 
             const startTime = Date.now();
             state.processingStartTime = startTime;
             if (state.processingTimerInterval) clearInterval(state.processingTimerInterval);
             state.processingTimerInterval = setInterval(() => {
                 const elapsed = Math.floor((Date.now() - startTime) / 1000);
-                const m = Math.floor(elapsed / 60), s = elapsed % 60;
+                const m = Math.floor(elapsed / 60);
+                const s = elapsed % 60;
                 document.getElementById('processingTimer').textContent =
-                    `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-            }, 500);
+                    `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            }, 250);
 
             try {
                 const fd = new FormData();
-                fd.append('video', state.file);
-                fd.append('quality', state.selectedQuality);
-                fd.append('resolution', state.selectedResolution);
-                fd.append('aspectRatio', state.selectedAspectRatio);
-                fd.append('preserveFps', state.preserveFps ? 'true' : 'false');
-                fd.append('preserveMaxQuality', state.preserveMaxQuality ? 'true' : 'false');
+                fd.append('video', state.file, state.file.name);
 
-                // Read advanced controls if present.
-                const advFps = document.getElementById('advFps')?.value;
-                const advVideoBitrate = document.getElementById('advVideoBitrate')?.value;
-                const advAudioBitrate = document.getElementById('advAudioBitrate')?.value;
-                if (advFps) fd.append('outputFps', advFps);
-                if (advVideoBitrate) fd.append('videoBitrate', advVideoBitrate);
-                if (advAudioBitrate) fd.append('audioBitrate', advAudioBitrate);
+                const options = {
+                    quality: state.selectedQuality,
+                    resolution: state.selectedResolution,
+                    aspectRatio: state.selectedAspectRatio,
+                    preserveFps: state.preserveFps,
+                    crf: Number(document.getElementById('advCrf')?.value || 18),
+                    videoBitrate: Number(document.getElementById('advVideoBitrate')?.value || 8000),
+                    audioBitrate: Number(document.getElementById('advAudioBitrate')?.value || 192),
+                    fps: document.getElementById('advFps')?.value || 'auto',
+                    watermarkPosition: document.getElementById('watermarkPosition')?.value || 'bottom-right'
+                };
+                fd.append('options', JSON.stringify(options));
 
-                const res = await fetch('/api/process', { method: 'POST', body: fd });
-                const job = await res.json();
-                if (!res.ok) throw new Error(job.error || 'Could not start processing');
+                const response = await fetch('/api/process', { method: 'POST', body: fd });
+                const data = await response.json();
+                if (!response.ok || !data.jobId) throw new Error(data.error || 'Could not start processing');
 
-                const timer = setInterval(async () => {
-                    try {
-                        const r = await fetch(`/api/process/${job.jobId}/status`, { cache: 'no-store' });
-                        const st = await r.json();
-                        if (!r.ok) throw new Error(st.error || 'Status request failed');
+                const jobId = data.jobId;
+                const poll = async () => {
+                    const r = await fetch(`/api/process/${encodeURIComponent(jobId)}`);
+                    const j = await r.json();
 
-                        document.getElementById('progressFill').style.width = `${Math.min(st.progress || 0, 100)}%`;
-                        document.getElementById('processingStatusText').textContent = st.status || 'Processing...';
+                    if (j.progress != null) progressFill.style.width = `${Math.min(99, Math.max(2, j.progress))}%`;
+                    statusText.textContent = j.message || 'Processing...';
 
-                        const p = st.progress || 0;
-                        const stepIds = ['analyze','encode','audio','mux','finalize'];
-                        const doneCount = p >= 100 ? 5 : p >= 90 ? 4 : p >= 5 ? 2 : 1;
-                        steps.forEach((el,i) => {
-                            el.classList.toggle('done', i < doneCount);
-                            el.classList.toggle('active', i === Math.min(doneCount,4) && p < 100);
-                            el.querySelector('.step-status').textContent = i < doneCount ? '✓ Done' : (i === doneCount && p < 100 ? 'Processing...' : '');
+                    if (j.progressSteps) {
+                        j.progressSteps.forEach((step, i) => {
+                            const el = document.querySelector(`.progress-step[data-step="${step.id}"]`);
+                            if (!el) return;
+                            el.classList.toggle('done', step.done);
+                            el.classList.toggle('active', step.active);
+                            el.querySelector('.step-status').textContent =
+                                step.done ? '✓ Done' : (step.active ? 'Processing...' : '');
                         });
+                    }
 
-                        if (st.state === 'error') {
-                            clearInterval(timer);
-                            throw new Error(st.error || 'FFmpeg processing failed');
-                        }
+                    if (j.status === 'completed') {
+                        progressFill.style.width = '100%';
+                        statusText.textContent = 'Optimization complete!';
+                        state.optimizedMeta = j.output;
+                        state.downloadUrl = j.downloadUrl;
 
-                        if (st.state === 'done') {
-                            clearInterval(timer);
-                            state.processing = false;
-                            state.processed = true;
-                            state.downloadUrl = st.download;
-                            state.optimizedMeta = {
-                                sizeBytes: st.outputMeta.sizeBytes,
-                                sizeFormatted: st.outputMeta.sizeFormatted,
-                                fps: st.outputMeta.fps,
-                                width: st.outputMeta.width,
-                                height: st.outputMeta.height
-                            };
-                            clearInterval(state.processingTimerInterval);
-                            document.getElementById('progressFill').style.width = '100%';
-                            document.getElementById('processingStatusText').textContent = 'Optimization complete!';
-                            renderResultsStats(state.videoMeta, state.optimizedMeta);
-                            renderComparison(state.fileUrl, st.download, state.videoMeta);
-                            document.getElementById('downloadBtn').onclick = () => { window.location.href = st.download; };
-                            showSection('results');
-                            showToast('Video optimized successfully!', 'success');
-                        }
-                    } catch (e) {
-                        clearInterval(timer);
                         clearInterval(state.processingTimerInterval);
                         state.processing = false;
-                        document.getElementById('processBtn').disabled = false;
-                        document.getElementById('processingStatusText').textContent = 'Processing failed.';
-                        showToast(e.message || 'Processing failed', 'error');
+                        state.processed = true;
+                        showSection('results');
+                        document.getElementById('results').classList.remove('section-hidden');
+
+                        renderResultsStats(state.videoMeta, j.output);
+                        renderComparison(state.fileUrl, j.downloadUrl, state.videoMeta);
+
+                        setTimeout(() => {
+                            document.querySelectorAll('#comparisonContainer video').forEach(v => v.play().catch(() => {}));
+                        }, 300);
+
+                        showToast('Video optimized successfully!', 'success');
+                        return;
                     }
-                }, 700);
-            } catch (e) {
+
+                    if (j.status === 'failed') {
+                        throw new Error(j.error || 'FFmpeg processing failed');
+                    }
+
+                    setTimeout(poll, 600);
+                };
+
+                await poll();
+            } catch (err) {
+                console.error(err);
                 clearInterval(state.processingTimerInterval);
                 state.processing = false;
+                state.processed = false;
                 document.getElementById('processBtn').disabled = false;
-                document.getElementById('processingStatusText').textContent = 'Processing failed.';
-                showToast(e.message || 'Processing failed', 'error');
+                showToast(err.message || 'FFmpeg processing failed', 'error');
+                statusText.textContent = 'Processing failed';
             }
         }
 
@@ -2076,7 +2145,7 @@
             // Create a download link
             const a = document.createElement('a');
             a.href = state.downloadUrl;
-            const ext = state.file.name.split('.').pop();
+            const ext = 'mp4';
             const baseName = state.file.name.replace(/\.[^.]+$/, '');
             const qualityLabel = quality.charAt(0).toUpperCase() + quality.slice(1);
             const watermarkSuffix = state.watermarkEnabled ? '-wm' : '';
@@ -2091,7 +2160,7 @@
         function resetApp() {
             // Revoke old URLs
             if (state.fileUrl) URL.revokeObjectURL(state.fileUrl);
-            if (state.downloadUrl && state.downloadUrl !== state.fileUrl) URL.revokeObjectURL(state.downloadUrl);
+            
 
             state.file = null;
             state.fileUrl = null;

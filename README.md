@@ -1,19 +1,28 @@
-# HEXO METHOD — Real FFmpeg TikTok Optimizer v3
+# HEXO METHOD v4 — Railway
 
-## Railway
-1. Upload these files to your GitHub repository.
-2. Railway deploys the repository using the Dockerfile.
-3. Docker installs FFmpeg, FFprobe and DejaVu fonts.
-4. The app listens on Railway's PORT automatically.
+Real Node.js + FFmpeg TikTok optimizer.
 
-## What is real
-- `/api/analyze` uses FFprobe for exact media metadata.
-- `/api/process` runs real FFmpeg H.264/AAC encoding.
-- Processing progress comes from FFmpeg `-progress pipe:1`.
-- Output is MP4 with `+faststart`.
-- Original FPS is preserved with passthrough when possible.
-- Every exported video receives the HEXO METHOD / @hexo_orig creator tag.
-- Temporary files are removed after processing/download/timeout.
+## Deploy
+Push all files in this folder to the GitHub repository connected to Railway.
+Railway should build the included Dockerfile automatically.
 
-## Note
-The estimated size shown before processing is only an estimate. The final size is measured from the actual FFmpeg output.
+Required files:
+- Dockerfile
+- package.json
+- server.js
+- index.html
+
+The server uses Railway's PORT automatically and listens on 0.0.0.0.
+
+## Test
+Open:
+`/api/health`
+
+It should return JSON with `ok: true`.
+
+Process flow:
+Upload -> FFprobe -> FFmpeg H.264/AAC -> HEXO METHOD tag -> output verification -> download.
+
+The creator tag is always embedded:
+HEXO METHOD
+UPLOAD METHOD BY @hexo_orig
