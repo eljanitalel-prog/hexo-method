@@ -878,7 +878,7 @@
                 <a href="#settings" class="text-sm text-[var(--hexo-text-secondary)] hover:text-[var(--hexo-text)] transition-colors px-2 py-1" data-nav="settings">Settings</a>
                 <a href="#results" class="text-sm text-[var(--hexo-text-secondary)] hover:text-[var(--hexo-text)] transition-colors px-2 py-1" data-nav="results">Results</a>
                 <span class="text-[var(--hexo-border)] mx-1">|</span>
-                <span class="text-xs text-[var(--hexo-text-secondary)] hidden sm:inline">v2.0</span>
+                <span class="text-xs text-[var(--hexo-text-secondary)] hidden sm:inline">v5.0</span>
             </nav>
         </div>
     </header>
@@ -901,7 +901,7 @@
                     <span class="badge badge-primary"><i class="fas fa-check-circle"></i> Preserve FPS</span>
                     <span class="badge badge-primary"><i class="fas fa-check-circle"></i> H.264 High Quality</span>
                     <span class="badge badge-primary"><i class="fas fa-check-circle"></i> AAC 256kbps</span>
-                    <span class="badge badge-primary"><i class="fas fa-check-circle"></i> CRF 18</span>
+                    <span class="badge badge-primary"><i class="fas fa-check-circle"></i> CRF 19</span>
                 </div>
             </div>
 
@@ -1084,9 +1084,11 @@
                             <div>
                                 <label class="setting-label">Encoder Preset</label>
                                 <select id="advEncoderPreset" class="select-input">
-                                    <option value="slow">Slow (best compression)</option>
-                                    <option value="medium">Medium (balanced)</option>
-                                    <option value="fast">Fast (speed optimized)</option>
+                                    <option value="superfast">Superfast (recommended)</option>
+                                    <option value="veryfast">Veryfast (quality/speed)</option>
+                                    <option value="fast">Fast</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="slow">Slow (slower)</option>
                                     <option value="veryslow">Very Slow (maximum quality)</option>
                                 </select>
                             </div>
@@ -1129,7 +1131,7 @@
                 <div class="mt-6 pt-2 flex flex-col sm:flex-row gap-4 items-center justify-between">
                     <div class="flex items-center gap-3 text-sm text-[var(--hexo-text-secondary)]">
                         <i class="fas fa-info-circle"></i>
-                        <span>Settings optimized for TikTok's recommended upload guidelines</span>
+                        <span>Speed-optimized FFmpeg encoding • preserves original FPS by default</span>
                     </div>
                     <button id="processBtn" class="btn-primary text-base px-8 py-3 text-lg" disabled>
                         <i class="fas fa-play-circle"></i>
@@ -1201,8 +1203,8 @@
                                 <div class="flex items-center gap-3 flex-1">
                                     <i class="fas fa-watermark text-[var(--hexo-text-secondary)]"></i>
                                     <div>
-                                        <div class="text-sm font-medium">Add HEXO METHOD watermark</div>
-                                        <div class="text-xs text-[var(--hexo-text-secondary)]">Small brand mark in corner</div>
+                                        <div class="text-sm font-medium">HEXO METHOD tag is included automatically</div>
+                                        <div class="text-xs text-[var(--hexo-text-secondary)]">UPLOAD METHOD BY @hexo_orig — bottom right</div>
                                     </div>
                                 </div>
                                 <div id="watermarkSwitch" class="toggle-switch">
@@ -1256,7 +1258,7 @@
                 <span class="w-1 h-1 rounded-full bg-[var(--hexo-border)]"></span>
                 <span>Built for creators</span>
                 <span class="w-1 h-1 rounded-full bg-[var(--hexo-border)]"></span>
-                <span>v2.0</span>
+                <span>v5.0</span>
             </div>
         </div>
     </footer>
@@ -1276,10 +1278,10 @@
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
         const qualityPresets = [
-            { id: 'max', label: 'Maximum Quality', icon: 'fa-crown', desc: 'CRF 16 — near lossless' },
-            { id: 'tiktok', label: 'TikTok Recommended', icon: 'fa-check', desc: 'CRF 18 — optimized for TikTok' },
-            { id: 'balanced', label: 'Balanced', icon: 'fa-balance-scale', desc: 'CRF 22 — good quality/size' },
-            { id: 'smaller', label: 'Smaller File', icon: 'fa-compress', desc: 'CRF 26 — smaller size' },
+            { id: 'max', label: 'Maximum Quality', icon: 'fa-crown', desc: 'CRF 18 — high quality + fast' },
+            { id: 'tiktok', label: 'TikTok Recommended', icon: 'fa-check', desc: 'CRF 19 — optimized for TikTok' },
+            { id: 'balanced', label: 'Balanced', icon: 'fa-balance-scale', desc: 'CRF 21 — quality/size' },
+            { id: 'smaller', label: 'Smaller File', icon: 'fa-compress', desc: 'CRF 24 — smaller + fast' },
         ];
 
         const resolutionPresets = [
@@ -1316,7 +1318,7 @@
             preserveFps: true,
             preserveMaxQuality: true,
             advancedOpen: false,
-            watermarkEnabled: false,
+            watermarkEnabled: true,
             processing: false,
             processed: false,
             processingStartTime: null,
@@ -1578,66 +1580,55 @@
             });
         }
 
-
         function extractVideoMeta(file) {
             return new Promise((resolve, reject) => {
                 const video = document.createElement('video');
                 video.preload = 'metadata';
-                const objectUrl = URL.createObjectURL(file);
-                let settled = false;
-
-                const finish = (meta) => {
-                    if (settled) return;
-                    settled = true;
-                    URL.revokeObjectURL(objectUrl);
-                    resolve(meta);
-                };
-
-                const fail = (err) => {
-                    if (settled) return;
-                    settled = true;
-                    URL.revokeObjectURL(objectUrl);
-                    reject(err);
-                };
-
-                video.onloadedmetadata = () => {
-                    const duration = Number.isFinite(video.duration) ? video.duration : 0;
-                    const width = video.videoWidth || 0;
-                    const height = video.videoHeight || 0;
-
-                    // Fast browser-side estimate. The backend uses FFprobe during processing
-                    // for the authoritative source/output metadata.
-                    let fps = 30;
-                    if (height >= 1080) fps = 60;
-
+                video.onloadedmetadata = async function() {
+                    const duration = video.duration;
+                    const width = video.videoWidth;
+                    const height = video.videoHeight;
+                    const fps = await detectFpsFromFile(file);
                     const sizeBytes = file.size;
+                    const sizeFormatted = formatFileSize(sizeBytes);
+                    const durationFormatted = formatDuration(duration);
                     const avgBitrate = duration > 0 ? (sizeBytes * 8) / duration : 0;
-                    const ext = file.name.split('.').pop().toLowerCase();
+                    const bitrateFormatted = formatBitrate(avgBitrate);
+                    const aspectRatio = width && height ? `${width}:${height}` : '—';
+                    const ext = file.name.split('.').pop().toUpperCase();
+                    const codecs = {
+                        'mp4': 'H.264',
+                        'mov': 'H.264 / ProRes',
+                        'mkv': 'H.264 / H.265',
+                        'webm': 'VP8 / VP9',
+                    };
+                    const videoCodec = codecs[ext.toLowerCase()] || 'H.264';
+                    const audioCodec = ext.toLowerCase() === 'webm' ? 'Vorbis / Opus' : 'AAC';
 
-                    finish({
+                    URL.revokeObjectURL(video.src);
+
+                    resolve({
                         duration,
-                        durationFormatted: formatDuration(duration),
+                        durationFormatted,
                         width,
                         height,
                         fps,
                         sizeBytes,
-                        sizeFormatted: formatFileSize(sizeBytes),
+                        sizeFormatted,
                         bitrate: avgBitrate,
-                        bitrateFormatted: formatBitrate(avgBitrate),
-                        aspectRatio: width && height ? `${width}:${height}` : '—',
-                        videoCodec: ext === 'webm' ? 'VP8 / VP9' : 'H.264 / H.265',
-                        audioCodec: ext === 'webm' ? 'Opus / Vorbis' : 'AAC / unknown',
+                        bitrateFormatted,
+                        aspectRatio,
+                        videoCodec,
+                        audioCodec,
                     });
                 };
-
-                video.onerror = () => fail(new Error('Could not read video metadata'));
-                video.src = objectUrl;
+                video.onerror = function() {
+                    reject(new Error('Could not read video metadata'));
+                };
+                video.src = URL.createObjectURL(file);
                 video.load();
-
                 setTimeout(() => {
-                    if (!settled && !video.videoWidth) {
-                        fail(new Error('Timeout reading video metadata'));
-                    }
+                    if (!video.duration) reject(new Error('Timeout reading video'));
                 }, 5000);
             });
         }
@@ -1674,121 +1665,183 @@
             }
         }
 
-
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // REAL RAILWAY + FFMPEG PROCESSING
+        // REAL RAILWAY + FFMPEG PROCESSING ENGINE (v5)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-        async function startProcessing() {
+        function setProgressStep(id, status, done = false) {
+            const el = document.querySelector(`.progress-step[data-step="${id}"]`);
+            if (!el) return;
+            el.classList.toggle('active', !done);
+            el.classList.toggle('done', done);
+            const st = el.querySelector('.step-status');
+            if (st) st.textContent = done ? '✓ Done' : status;
+        }
+
+        function normalizeServerMeta(m) {
+            if (!m) return null;
+            return {
+                ...m,
+                sizeFormatted: formatFileSize(m.sizeBytes || 0),
+                durationFormatted: formatDuration(m.duration || 0),
+                bitrateFormatted: formatBitrate(m.bitrate || 0),
+                aspectRatio: m.width && m.height ? `${m.width}:${m.height}` : '—'
+            };
+        }
+
+        function startProcessing() {
             if (!state.file || !state.videoMeta || state.processing) return;
 
             state.processing = true;
             state.processed = false;
+            state.downloadUrl = null;
             document.getElementById('processBtn').disabled = true;
             showSection('processing');
-            document.getElementById('processing').classList.remove('section-hidden');
 
             const progressFill = document.getElementById('progressFill');
             const statusText = document.getElementById('processingStatusText');
-            const steps = document.querySelectorAll('.progress-step');
-            steps.forEach(s => {
-                s.classList.remove('active', 'done');
-                s.querySelector('.step-status').textContent = '';
-            });
-            progressFill.style.width = '2%';
-            statusText.textContent = 'Uploading video to HEXO METHOD...';
-
             const startTime = Date.now();
             state.processingStartTime = startTime;
+            progressFill.style.width = '0%';
+            statusText.textContent = 'Uploading video to the encoder...';
+
+            document.querySelectorAll('.progress-step').forEach(s => {
+                s.classList.remove('active', 'done');
+                const st = s.querySelector('.step-status');
+                if (st) st.textContent = '';
+            });
+
             if (state.processingTimerInterval) clearInterval(state.processingTimerInterval);
             state.processingTimerInterval = setInterval(() => {
                 const elapsed = Math.floor((Date.now() - startTime) / 1000);
-                const m = Math.floor(elapsed / 60);
-                const s = elapsed % 60;
+                const m = Math.floor(elapsed / 60), sec = elapsed % 60;
                 document.getElementById('processingTimer').textContent =
-                    `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                    `${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
             }, 250);
 
-            try {
-                const fd = new FormData();
-                fd.append('video', state.file, state.file.name);
+            const fd = new FormData();
+            fd.append('video', state.file, state.file.name);
+            fd.append('quality', state.selectedQuality);
+            fd.append('resolution', state.selectedResolution);
+            fd.append('aspect', state.selectedAspectRatio);
+            fd.append('preserveFps', String(state.preserveFps));
+            fd.append('preserveMaxQuality', String(state.preserveMaxQuality));
+            fd.append('fps', document.getElementById('advFps')?.value || 'auto');
+            fd.append('crf', document.getElementById('advCrf')?.value || '19');
+            fd.append('videoBitrate', document.getElementById('advVideoBitrate')?.value || '8000');
+            fd.append('audioBitrate', document.getElementById('advAudioBitrate')?.value || '192');
+            fd.append('preset', document.getElementById('advEncoderPreset')?.value || 'superfast');
+            // Brand tag is enabled by default for HEXO METHOD.
+            fd.append('watermark', 'true');
+            fd.append('watermarkPosition', 'bottom-right');
 
-                const options = {
-                    quality: state.selectedQuality,
-                    resolution: state.selectedResolution,
-                    aspectRatio: state.selectedAspectRatio,
-                    preserveFps: state.preserveFps,
-                    crf: Number(document.getElementById('advCrf')?.value || 18),
-                    videoBitrate: Number(document.getElementById('advVideoBitrate')?.value || 8000),
-                    audioBitrate: Number(document.getElementById('advAudioBitrate')?.value || 192),
-                    fps: document.getElementById('advFps')?.value || 'auto',
-                    watermarkPosition: document.getElementById('watermarkPosition')?.value || 'bottom-right'
-                };
-                fd.append('options', JSON.stringify(options));
+            const xhr = new XMLHttpRequest();
+            let consumed = 0;
 
-                const response = await fetch('/api/process', { method: 'POST', body: fd });
-                const data = await response.json();
-                if (!response.ok || !data.jobId) throw new Error(data.error || 'Could not start processing');
+            function handleLine(line) {
+                if (!line.trim()) return;
+                let msg;
+                try { msg = JSON.parse(line); } catch { return; }
 
-                const jobId = data.jobId;
-                const poll = async () => {
-                    const r = await fetch(`/api/process/${encodeURIComponent(jobId)}`);
-                    const j = await r.json();
-
-                    if (j.progress != null) progressFill.style.width = `${Math.min(99, Math.max(2, j.progress))}%`;
-                    statusText.textContent = j.message || 'Processing...';
-
-                    if (j.progressSteps) {
-                        j.progressSteps.forEach((step, i) => {
-                            const el = document.querySelector(`.progress-step[data-step="${step.id}"]`);
-                            if (!el) return;
-                            el.classList.toggle('done', step.done);
-                            el.classList.toggle('active', step.active);
-                            el.querySelector('.step-status').textContent =
-                                step.done ? '✓ Done' : (step.active ? 'Processing...' : '');
-                        });
+                if (msg.type === 'meta' && msg.original) {
+                    state.videoMeta = normalizeServerMeta(msg.original);
+                    setProgressStep('analyze', '✓ Done', true);
+                    return;
+                }
+                if (msg.type === 'status') {
+                    const p = Number(msg.progress || 0);
+                    progressFill.style.width = `${Math.min(99, p)}%`;
+                    statusText.textContent = msg.message || 'Processing...';
+                    if (msg.stage === 'analyze') setProgressStep('analyze', 'Processing...');
+                    if (msg.stage === 'encode') {
+                        setProgressStep('analyze', '✓ Done', true);
+                        setProgressStep('encode', 'Processing...');
                     }
-
-                    if (j.status === 'completed') {
-                        progressFill.style.width = '100%';
-                        statusText.textContent = 'Optimization complete!';
-                        state.optimizedMeta = j.output;
-                        state.downloadUrl = j.downloadUrl;
-
-                        clearInterval(state.processingTimerInterval);
-                        state.processing = false;
-                        state.processed = true;
-                        showSection('results');
-                        document.getElementById('results').classList.remove('section-hidden');
-
-                        renderResultsStats(state.videoMeta, j.output);
-                        renderComparison(state.fileUrl, j.downloadUrl, state.videoMeta);
-
-                        setTimeout(() => {
-                            document.querySelectorAll('#comparisonContainer video').forEach(v => v.play().catch(() => {}));
-                        }, 300);
-
-                        showToast('Video optimized successfully!', 'success');
-                        return;
+                    if (msg.stage === 'finalize') {
+                        setProgressStep('encode', '✓ Done', true);
+                        setProgressStep('audio', '✓ Included', true);
+                        setProgressStep('mux', '✓ Included', true);
+                        setProgressStep('finalize', 'Processing...');
                     }
-
-                    if (j.status === 'failed') {
-                        throw new Error(j.error || 'FFmpeg processing failed');
+                    return;
+                }
+                if (msg.type === 'progress') {
+                    const p = Number(msg.progress || 0);
+                    progressFill.style.width = `${Math.min(99, p)}%`;
+                    statusText.textContent = msg.message || 'Encoding H.264...';
+                    setProgressStep('analyze', '✓ Done', true);
+                    setProgressStep('encode', 'Processing...');
+                    if (p > 92) {
+                        setProgressStep('audio', '✓ Included', true);
+                        setProgressStep('mux', '✓ Included', true);
                     }
+                    return;
+                }
+                if (msg.type === 'complete') {
+                    progressFill.style.width = '100%';
+                    statusText.textContent = 'Optimization complete!';
+                    ['analyze','encode','audio','mux','finalize'].forEach(id => setProgressStep(id, '✓ Done', true));
 
-                    setTimeout(poll, 600);
-                };
+                    const original = normalizeServerMeta(msg.original);
+                    const optimized = normalizeServerMeta(msg.optimized);
+                    state.videoMeta = original || state.videoMeta;
+                    state.optimizedMeta = optimized;
+                    state.downloadUrl = msg.downloadUrl;
 
-                await poll();
-            } catch (err) {
-                console.error(err);
-                clearInterval(state.processingTimerInterval);
-                state.processing = false;
-                state.processed = false;
-                document.getElementById('processBtn').disabled = false;
-                showToast(err.message || 'FFmpeg processing failed', 'error');
-                statusText.textContent = 'Processing failed';
+                    state.processing = false;
+                    state.processed = true;
+                    clearInterval(state.processingTimerInterval);
+                    state.processingTimerInterval = null;
+                    document.getElementById('processBtn').disabled = false;
+
+                    showSection('results');
+                    renderResultsStats(state.videoMeta, optimized);
+                    renderComparison(state.fileUrl, state.downloadUrl, state.videoMeta);
+                    showToast('Video optimized successfully with real FFmpeg!', 'success');
+                    return;
+                }
+                if (msg.type === 'error') {
+                    throw new Error(msg.message || 'FFmpeg processing failed.');
+                }
             }
+
+            function consumeResponse() {
+                const text = xhr.responseText || '';
+                const chunk = text.slice(consumed);
+                const lines = chunk.split(/\r?\n/);
+                consumed = text.length - (lines[lines.length - 1] || '').length;
+                lines.slice(0, -1).forEach(handleLine);
+            }
+
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    const p = (e.loaded / e.total) * 5;
+                    progressFill.style.width = `${p.toFixed(1)}%`;
+                    statusText.textContent = `Uploading video… ${Math.round((e.loaded/e.total)*100)}%`;
+                }
+            };
+            xhr.onprogress = consumeResponse;
+            xhr.onload = () => {
+                consumeResponse();
+                // Process any final line even if the response did not end with a newline.
+                const tail = (xhr.responseText || '').slice(consumed).trim();
+                if (tail) { handleLine(tail); consumed = xhr.responseText.length; }
+                if (xhr.status >= 400 && state.processing) {
+                    handleLine(JSON.stringify({ type:'error', message:`Server returned HTTP ${xhr.status}` }));
+                }
+            };
+            xhr.onerror = () => {
+                clearInterval(state.processingTimerInterval);
+                state.processingTimerInterval = null;
+                state.processing = false;
+                document.getElementById('processBtn').disabled = false;
+                statusText.textContent = 'Connection error.';
+                showToast('Could not connect to the FFmpeg server.', 'error');
+            };
+            xhr.ontimeout = xhr.onerror;
+            xhr.open('POST', '/api/process', true);
+            xhr.timeout = 0;
+            xhr.send(fd);
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1864,10 +1917,7 @@
                 // Watermark toggle
                 const wmToggle = e.target.closest('#watermarkToggle');
                 if (wmToggle) {
-                    state.watermarkEnabled = !state.watermarkEnabled;
-                    document.getElementById('watermarkSwitch').classList.toggle('active', state.watermarkEnabled);
-                    document.getElementById('watermarkOptions').classList.toggle('section-hidden', !state
-                        .watermarkEnabled);
+                    showToast('HEXO METHOD tag is included automatically on every processed video.', 'info');
                     return;
                 }
 
@@ -2090,7 +2140,7 @@
 
         function updateAdvancedFromPreset() {
             const quality = state.selectedQuality;
-            const crfValues = { max: 16, tiktok: 18, balanced: 22, smaller: 26 };
+            const crfValues = { max: 18, tiktok: 19, balanced: 21, smaller: 24 };
             const crf = crfValues[quality] || 18;
             document.getElementById('advCrf').value = crf;
             document.getElementById('crfValue').textContent = crf;
@@ -2099,11 +2149,9 @@
             document.getElementById('advVideoBitrate').value = bitrates[quality] || 8000;
 
             if (quality === 'max') {
-                document.getElementById('advEncoderPreset').value = 'slow';
-            } else if (quality === 'tiktok') {
-                document.getElementById('advEncoderPreset').value = 'medium';
+                document.getElementById('advEncoderPreset').value = 'veryfast';
             } else {
-                document.getElementById('advEncoderPreset').value = 'medium';
+                document.getElementById('advEncoderPreset').value = 'superfast';
             }
 
             updateEstimatedSize();
@@ -2145,11 +2193,11 @@
             // Create a download link
             const a = document.createElement('a');
             a.href = state.downloadUrl;
-            const ext = 'mp4';
+            const ext = state.file.name.split('.').pop();
             const baseName = state.file.name.replace(/\.[^.]+$/, '');
             const qualityLabel = quality.charAt(0).toUpperCase() + quality.slice(1);
             const watermarkSuffix = state.watermarkEnabled ? '-wm' : '';
-            a.download = `${baseName}-HEXO-${qualityLabel}${watermarkSuffix}.${ext}`;
+            a.download = `${baseName}-HEXO-${qualityLabel}.mp4`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -2160,7 +2208,7 @@
         function resetApp() {
             // Revoke old URLs
             if (state.fileUrl) URL.revokeObjectURL(state.fileUrl);
-            
+            if (state.downloadUrl && state.downloadUrl !== state.fileUrl) URL.revokeObjectURL(state.downloadUrl);
 
             state.file = null;
             state.fileUrl = null;
@@ -2169,7 +2217,7 @@
             state.downloadUrl = null;
             state.processing = false;
             state.processed = false;
-            state.watermarkEnabled = false;
+            state.watermarkEnabled = true;
 
             if (state.processingTimerInterval) {
                 clearInterval(state.processingTimerInterval);
@@ -2233,7 +2281,7 @@
             document.getElementById('advancedChevron').classList.remove('fa-chevron-up');
             document.getElementById('advancedToggleText').textContent = 'Show';
 
-            document.getElementById('watermarkSwitch').classList.remove('active');
+            document.getElementById('watermarkSwitch').classList.add('active');
             document.getElementById('watermarkOptions').classList.add('section-hidden');
             document.getElementById('preserveFpsSwitch').classList.add('active');
             document.getElementById('preserveMaxQualitySwitch').classList.add('active');
