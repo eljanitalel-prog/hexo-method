@@ -1,0 +1,2193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <base target="_self">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HEXO METHOD — TikTok Video Optimizer</title>
+    <meta name="description" content="HEXO METHOD compresses and optimizes videos for TikTok while preserving maximum visual quality and original FPS.">
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --hexo-primary: #6C5CE7;
+            --hexo-primary-glow: rgba(108, 92, 231, 0.35);
+            --hexo-accent: #00D2FF;
+            --hexo-accent-glow: rgba(0, 210, 255, 0.2);
+            --hexo-bg: #0A0A0F;
+            --hexo-surface: #12121A;
+            --hexo-surface-2: #1A1A26;
+            --hexo-surface-3: #24243A;
+            --hexo-border: #2A2A40;
+            --hexo-text: #F0F0F8;
+            --hexo-text-secondary: #9090B8;
+            --hexo-success: #00E676;
+            --hexo-warning: #FFD600;
+            --hexo-danger: #FF5252;
+            --hexo-glass: rgba(18, 18, 26, 0.85);
+            --hexo-glass-border: rgba(108, 92, 231, 0.15);
+            --hexo-radius: 12px;
+            --hexo-radius-lg: 20px;
+            --hexo-transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--hexo-bg);
+            color: var(--hexo-text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--hexo-surface);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--hexo-surface-3);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--hexo-text-secondary);
+        }
+
+        .glass {
+            background: var(--hexo-glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--hexo-glass-border);
+        }
+
+        .glass-card {
+            background: var(--hexo-surface);
+            border: 1px solid var(--hexo-border);
+            border-radius: var(--hexo-radius-lg);
+            transition: border-color var(--hexo-transition), box-shadow var(--hexo-transition);
+        }
+
+        .glass-card:hover {
+            border-color: rgba(108, 92, 231, 0.3);
+            box-shadow: 0 0 40px rgba(108, 92, 231, 0.05);
+        }
+
+        .hexo-gradient {
+            background: linear-gradient(135deg, var(--hexo-primary), var(--hexo-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hexo-glow {
+            box-shadow: 0 0 30px var(--hexo-primary-glow);
+        }
+
+        .hexo-border-glow {
+            border-color: var(--hexo-primary) !important;
+            box-shadow: 0 0 20px var(--hexo-primary-glow);
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--hexo-border);
+            border-radius: var(--hexo-radius-lg);
+            transition: all var(--hexo-transition);
+            cursor: pointer;
+            background: var(--hexo-surface);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .drop-zone:hover,
+        .drop-zone.drag-over {
+            border-color: var(--hexo-primary);
+            background: rgba(108, 92, 231, 0.05);
+            box-shadow: 0 0 60px rgba(108, 92, 231, 0.08);
+        }
+
+        .drop-zone.drag-over {
+            border-style: solid;
+            transform: scale(1.005);
+        }
+
+        .drop-zone .glow-ring {
+            position: absolute;
+            inset: -2px;
+            border-radius: var(--hexo-radius-lg);
+            background: conic-gradient(from 0deg, transparent, var(--hexo-primary), var(--hexo-accent), transparent);
+            opacity: 0;
+            transition: opacity 0.5s;
+            z-index: 0;
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            padding: 2px;
+        }
+
+        .drop-zone.drag-over .glow-ring {
+            opacity: 1;
+            animation: spin-glow 3s linear infinite;
+        }
+
+        @keyframes spin-glow {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .drop-zone-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--hexo-primary), #8B7CF7);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 28px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all var(--hexo-transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(108, 92, 231, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: var(--hexo-surface-2);
+            color: var(--hexo-text);
+            border: 1px solid var(--hexo-border);
+            border-radius: 10px;
+            padding: 12px 28px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all var(--hexo-transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--hexo-primary);
+            background: rgba(108, 92, 231, 0.08);
+        }
+
+        .btn-secondary.active {
+            border-color: var(--hexo-primary);
+            background: rgba(108, 92, 231, 0.15);
+            color: #fff;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--hexo-text-secondary);
+            border: none;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: color var(--hexo-transition);
+        }
+
+        .btn-ghost:hover {
+            color: var(--hexo-text);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            gap: 6px;
+        }
+
+        .badge-primary {
+            background: rgba(108, 92, 231, 0.15);
+            color: var(--hexo-primary);
+            border: 1px solid rgba(108, 92, 231, 0.2);
+        }
+
+        .badge-success {
+            background: rgba(0, 230, 118, 0.1);
+            color: var(--hexo-success);
+            border: 1px solid rgba(0, 230, 118, 0.2);
+        }
+
+        .badge-warning {
+            background: rgba(255, 214, 0, 0.1);
+            color: var(--hexo-warning);
+            border: 1px solid rgba(255, 214, 0, 0.2);
+        }
+
+        .badge-info {
+            background: rgba(0, 210, 255, 0.1);
+            color: var(--hexo-accent);
+            border: 1px solid rgba(0, 210, 255, 0.2);
+        }
+
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--hexo-text);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--hexo-text-secondary);
+            font-weight: 400;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--hexo-surface-2);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--hexo-primary), var(--hexo-accent));
+            border-radius: 4px;
+            transition: width 0.4s ease;
+            position: relative;
+        }
+
+        .progress-bar-fill::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 20px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3));
+            border-radius: 4px;
+        }
+
+        .progress-step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+            opacity: 0.4;
+            transition: all 0.4s ease;
+        }
+
+        .progress-step.active {
+            opacity: 1;
+        }
+
+        .progress-step.done {
+            opacity: 0.7;
+        }
+
+        .progress-step .step-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            background: var(--hexo-surface-2);
+            border: 1px solid var(--hexo-border);
+            transition: all 0.4s ease;
+            flex-shrink: 0;
+        }
+
+        .progress-step.active .step-icon {
+            background: rgba(108, 92, 231, 0.2);
+            border-color: var(--hexo-primary);
+            color: var(--hexo-primary);
+            animation: pulse-icon 1.5s ease-in-out infinite;
+        }
+
+        .progress-step.done .step-icon {
+            background: rgba(0, 230, 118, 0.15);
+            border-color: var(--hexo-success);
+            color: var(--hexo-success);
+        }
+
+        @keyframes pulse-icon {
+            0%,
+            100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        .comparison-container {
+            position: relative;
+            width: 100%;
+            border-radius: var(--hexo-radius);
+            overflow: hidden;
+            background: #000;
+        }
+
+        .comparison-container video {
+            width: 100%;
+            display: block;
+            max-height: 500px;
+            object-fit: contain;
+        }
+
+        .comparison-overlay {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            width: 50%;
+            overflow: hidden;
+            border-right: 2px solid rgba(255, 255, 255, 0.5);
+            pointer-events: none;
+        }
+
+        .comparison-overlay video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        .comparison-slider {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 4px;
+            background: rgba(255, 255, 255, 0.8);
+            cursor: ew-resize;
+            transform: translateX(-50%);
+            z-index: 10;
+            border-radius: 2px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .comparison-slider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 36px;
+            height: 36px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 50%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .comparison-slider::after {
+            content: '↔';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1rem;
+            color: var(--hexo-bg);
+            z-index: 1;
+            font-weight: 700;
+        }
+
+        .comparison-label {
+            position: absolute;
+            top: 16px;
+            padding: 6px 16px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .comparison-label.original {
+            left: 16px;
+            color: var(--hexo-accent);
+        }
+
+        .comparison-label.optimized {
+            right: 16px;
+            color: var(--hexo-success);
+        }
+
+        .setting-group {
+            border-bottom: 1px solid var(--hexo-border);
+            padding: 16px 0;
+        }
+
+        .setting-group:last-child {
+            border-bottom: none;
+        }
+
+        .setting-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--hexo-text-secondary);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .preset-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 18px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid var(--hexo-border);
+            background: var(--hexo-surface);
+            color: var(--hexo-text-secondary);
+            transition: all var(--hexo-transition);
+            user-select: none;
+        }
+
+        .preset-chip:hover {
+            border-color: var(--hexo-primary);
+            color: var(--hexo-text);
+        }
+
+        .preset-chip.active {
+            border-color: var(--hexo-primary);
+            background: rgba(108, 92, 231, 0.15);
+            color: #fff;
+        }
+
+        .preset-chip .chip-icon {
+            margin-right: 8px;
+            font-size: 0.8rem;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: var(--hexo-surface-2);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background var(--hexo-transition);
+            border: 1px solid var(--hexo-border);
+            flex-shrink: 0;
+        }
+
+        .toggle-switch.active {
+            background: var(--hexo-primary);
+            border-color: var(--hexo-primary);
+        }
+
+        .toggle-switch .toggle-knob {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #fff;
+            transition: transform var(--hexo-transition);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .toggle-switch.active .toggle-knob {
+            transform: translateX(20px);
+        }
+
+        .range-input {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 4px;
+            background: var(--hexo-surface-2);
+            border-radius: 4px;
+            outline: none;
+            transition: background var(--hexo-transition);
+        }
+
+        .range-input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--hexo-primary);
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 12px rgba(108, 92, 231, 0.4);
+            transition: transform 0.2s;
+        }
+
+        .range-input::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
+        .range-input::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--hexo-primary);
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 12px rgba(108, 92, 231, 0.4);
+        }
+
+        .select-input {
+            background: var(--hexo-surface-2);
+            color: var(--hexo-text);
+            border: 1px solid var(--hexo-border);
+            border-radius: 10px;
+            padding: 10px 16px;
+            font-size: 0.9rem;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            cursor: pointer;
+            transition: border-color var(--hexo-transition);
+            width: 100%;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%239090B8' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 36px;
+        }
+
+        .select-input:focus {
+            border-color: var(--hexo-primary);
+        }
+
+        .select-input option {
+            background: var(--hexo-surface);
+            color: var(--hexo-text);
+        }
+
+        .input-field {
+            background: var(--hexo-surface-2);
+            color: var(--hexo-text);
+            border: 1px solid var(--hexo-border);
+            border-radius: 10px;
+            padding: 10px 16px;
+            font-size: 0.9rem;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: border-color var(--hexo-transition);
+            width: 100%;
+        }
+
+        .input-field:focus {
+            border-color: var(--hexo-primary);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .slide-up {
+            animation: slideUp 0.6s ease forwards;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .shimmer {
+            background: linear-gradient(90deg, var(--hexo-surface) 25%, var(--hexo-surface-2) 50%, var(--hexo-surface) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 2s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        .logo-hexo {
+            font-weight: 900;
+            font-size: 1.8rem;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #fff 30%, var(--hexo-primary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+        }
+
+        .logo-method {
+            font-weight: 300;
+            font-size: 0.7rem;
+            letter-spacing: 0.35em;
+            color: var(--hexo-text-secondary);
+            display: block;
+            margin-top: -2px;
+        }
+
+        .logo-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+        }
+
+        .info-item {
+            background: var(--hexo-surface-2);
+            border-radius: 10px;
+            padding: 14px 16px;
+            border: 1px solid var(--hexo-border);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 14px 24px;
+            border-radius: 12px;
+            background: var(--hexo-surface);
+            border: 1px solid var(--hexo-border);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.4s ease;
+            max-width: 400px;
+            backdrop-filter: blur(20px);
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-color: rgba(0, 230, 118, 0.3);
+        }
+
+        .toast.error {
+            border-color: rgba(255, 82, 82, 0.3);
+        }
+
+        .section-hidden {
+            display: none;
+        }
+
+        @media (max-width: 640px) {
+            .info-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .logo-hexo {
+                font-size: 1.4rem;
+            }
+
+            .btn-primary,
+            .btn-secondary {
+                padding: 10px 20px;
+                font-size: 0.85rem;
+            }
+
+            .preset-chip {
+                padding: 6px 14px;
+                font-size: 0.8rem;
+            }
+        }
+
+        .file-size-bar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .file-size-bar .bar-track {
+            flex: 1;
+            height: 8px;
+            background: var(--hexo-surface-2);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .file-size-bar .bar-track .bar-fill-original {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: var(--hexo-text-secondary);
+            border-radius: 4px;
+            width: 100%;
+        }
+
+        .file-size-bar .bar-track .bar-fill-optimized {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: linear-gradient(90deg, var(--hexo-primary), var(--hexo-accent));
+            border-radius: 4px;
+            transition: width 0.6s ease;
+        }
+
+        .watermark-toggle {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--hexo-surface-2);
+            border-radius: 10px;
+            border: 1px solid var(--hexo-border);
+            cursor: pointer;
+            transition: all var(--hexo-transition);
+        }
+
+        .watermark-toggle:hover {
+            border-color: var(--hexo-primary);
+        }
+
+        .watermark-toggle.active {
+            border-color: var(--hexo-primary);
+            background: rgba(108, 92, 231, 0.08);
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--hexo-success);
+            animation: pulse-dot 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.5;
+                transform: scale(1.3);
+            }
+        }
+
+        .hexo-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--hexo-primary), var(--hexo-accent), transparent);
+            opacity: 0.3;
+        }
+
+        .auto-detect-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 2px 10px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            background: rgba(0, 210, 255, 0.1);
+            color: var(--hexo-accent);
+            border: 1px solid rgba(0, 210, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== HEADER ====== -->
+    <header class="sticky top-0 z-50 glass border-b border-[var(--hexo-border)]" style="backdrop-filter:blur(24px);">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="logo-badge">
+                    <span class="logo-hexo">HEXO</span>
+                    <span class="logo-method">METHOD</span>
+                </div>
+                <span class="hidden sm:inline-flex ml-2 badge badge-info text-xs">
+                    <i class="fas fa-bolt"></i> TikTok Optimizer
+                </span>
+            </div>
+            <nav class="flex items-center gap-2 sm:gap-4">
+                <a href="#upload" class="text-sm text-[var(--hexo-text-secondary)] hover:text-[var(--hexo-text)] transition-colors px-2 py-1" data-nav="upload">Upload</a>
+                <a href="#settings" class="text-sm text-[var(--hexo-text-secondary)] hover:text-[var(--hexo-text)] transition-colors px-2 py-1" data-nav="settings">Settings</a>
+                <a href="#results" class="text-sm text-[var(--hexo-text-secondary)] hover:text-[var(--hexo-text)] transition-colors px-2 py-1" data-nav="results">Results</a>
+                <span class="text-[var(--hexo-border)] mx-1">|</span>
+                <span class="text-xs text-[var(--hexo-text-secondary)] hidden sm:inline">v3.0</span>
+            </nav>
+        </div>
+    </header>
+
+    <!-- ====== MAIN ====== -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+
+        <!-- ====== HERO / UPLOAD SECTION ====== -->
+        <section id="upload" class="mb-10 sm:mb-16 fade-in">
+            <div class="text-center mb-8 sm:mb-10">
+                <h1 class="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight mb-4">
+                    Optimize for
+                    <span class="hexo-gradient">TikTok</span>
+                </h1>
+                <p class="text-[var(--hexo-text-secondary)] text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
+                    Compress and optimize your videos for TikTok while preserving maximum visual quality,
+                    original FPS, and professional-grade encoding.
+                </p>
+                <div class="flex flex-wrap justify-center gap-3 mt-6">
+                    <span class="badge badge-primary"><i class="fas fa-check-circle"></i> Preserve FPS</span>
+                    <span class="badge badge-primary"><i class="fas fa-check-circle"></i> H.264 High Quality</span>
+                    <span class="badge badge-primary"><i class="fas fa-check-circle"></i> AAC 256kbps</span>
+                    <span class="badge badge-primary"><i class="fas fa-check-circle"></i> CRF 18</span>
+                </div>
+            </div>
+
+            <!-- Drop Zone -->
+            <div id="dropZone" class="drop-zone p-8 sm:p-12 lg:p-16 text-center">
+                <div class="glow-ring"></div>
+                <div class="drop-zone-content">
+                    <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-[var(--hexo-surface-2)] border border-[var(--hexo-border)] flex items-center justify-center">
+                        <i class="fas fa-cloud-upload-alt text-3xl text-[var(--hexo-primary)]"></i>
+                    </div>
+                    <h2 class="text-xl sm:text-2xl font-bold mb-2">Drop your video here</h2>
+                    <p class="text-[var(--hexo-text-secondary)] mb-6">or click to browse — MP4, MOV, MKV, WEBM supported</p>
+                    <div class="flex flex-wrap justify-center gap-3 mb-4">
+                        <span class="badge badge-info"><i class="fas fa-file-video"></i> MP4</span>
+                        <span class="badge badge-info"><i class="fas fa-file-video"></i> MOV</span>
+                        <span class="badge badge-info"><i class="fas fa-file-video"></i> MKV</span>
+                        <span class="badge badge-info"><i class="fas fa-file-video"></i> WEBM</span>
+                    </div>
+                    <label class="btn-primary cursor-pointer inline-flex">
+                        <i class="fas fa-folder-open"></i>
+                        Choose Video
+                        <input type="file" id="fileInput" accept="video/mp4,video/quicktime,video/x-matroska,video/webm" class="hidden">
+                    </label>
+                    <p class="text-xs text-[var(--hexo-text-secondary)] mt-4 opacity-60">
+                        <i class="fas fa-lock"></i> Your files are processed securely and never stored permanently
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====== VIDEO INFO SECTION ====== -->
+        <section id="videoInfo" class="section-hidden mb-10 fade-in">
+            <div class="glass-card p-6 sm:p-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-bold flex items-center gap-3">
+                        <i class="fas fa-info-circle text-[var(--hexo-primary)]"></i>
+                        Original Video Information
+                    </h2>
+                    <span id="fileTypeBadge" class="badge badge-info text-xs"></span>
+                </div>
+                <div id="videoInfoGrid" class="info-grid">
+                    <!-- populated by JS -->
+                </div>
+                <div class="mt-6 pt-4 border-t border-[var(--hexo-border)]">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-[var(--hexo-text-secondary)]">
+                            <i class="fas fa-calculator"></i> Estimated output size
+                        </span>
+                        <span id="estimatedSize" class="stat-value text-sm">—</span>
+                    </div>
+                    <div class="mt-2 file-size-bar">
+                        <span id="originalSizeLabel" class="text-xs text-[var(--hexo-text-secondary)] w-16">Original</span>
+                        <div class="bar-track">
+                            <div class="bar-fill-original" style="width:100%"></div>
+                            <div id="optimizedBarFill" class="bar-fill-optimized" style="width:100%"></div>
+                        </div>
+                        <span id="optimizedSizeLabel" class="text-xs text-[var(--hexo-text-secondary)] w-16 text-right">Optimized</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====== SETTINGS SECTION ====== -->
+        <section id="settings" class="section-hidden mb-10 fade-in">
+            <div class="glass-card p-6 sm:p-8">
+                <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+                    <h2 class="text-lg font-bold flex items-center gap-3">
+                        <i class="fas fa-sliders-h text-[var(--hexo-primary)]"></i>
+                        TikTok Optimization Settings
+                    </h2>
+                    <button id="tiktokBestQualityBtn" class="btn-primary text-sm py-2 px-5">
+                        <i class="fas fa-magic"></i> TikTok Best Quality
+                    </button>
+                </div>
+
+                <!-- Quality Presets -->
+                <div class="setting-group">
+                    <span class="setting-label">Quality Preset</span>
+                    <div id="qualityPresets" class="flex flex-wrap gap-2">
+                        <!-- populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Resolution -->
+                <div class="setting-group">
+                    <span class="setting-label">Resolution</span>
+                    <div id="resolutionPresets" class="flex flex-wrap gap-2">
+                        <!-- populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Aspect Ratio -->
+                <div class="setting-group">
+                    <span class="setting-label">Aspect Ratio Conversion</span>
+                    <div id="aspectRatioOptions" class="flex flex-wrap gap-2">
+                        <!-- populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Advanced Settings (collapsible) -->
+                <div class="setting-group">
+                    <div class="flex items-center justify-between">
+                        <span class="setting-label mb-0">Advanced Settings</span>
+                        <button id="toggleAdvancedBtn" class="btn-ghost text-xs flex items-center gap-2">
+                            <i class="fas fa-chevron-down" id="advancedChevron"></i>
+                            <span id="advancedToggleText">Show</span>
+                        </button>
+                    </div>
+                    <div id="advancedPanel" class="section-hidden mt-4 space-y-5">
+                        <!-- Resolution manual -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="setting-label">Width (px)</label>
+                                <input type="number" id="advWidth" class="input-field" value="1080" min="1" max="7680">
+                            </div>
+                            <div>
+                                <label class="setting-label">Height (px)</label>
+                                <input type="number" id="advHeight" class="input-field" value="1920" min="1" max="7680">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="setting-label">FPS</label>
+                                <select id="advFps" class="select-input">
+                                    <option value="auto">Auto (preserve original)</option>
+                                    <option value="120">120 FPS</option>
+                                    <option value="90">90 FPS</option>
+                                    <option value="60">60 FPS</option>
+                                    <option value="30">30 FPS</option>
+                                    <option value="24">24 FPS</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="setting-label">Video Bitrate (kbps)</label>
+                                <input type="number" id="advVideoBitrate" class="input-field" value="8000" min="500" max="50000" step="100">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="setting-label">Audio Bitrate (kbps)</label>
+                                <select id="advAudioBitrate" class="select-input">
+                                    <option value="256">256 kbps (High)</option>
+                                    <option value="192">192 kbps (Recommended)</option>
+                                    <option value="128">128 kbps (Balanced)</option>
+                                    <option value="96">96 kbps (Smaller)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="setting-label">CRF (Quality) — lower = better</label>
+                                <div class="flex items-center gap-4">
+                                    <input type="range" id="advCrf" class="range-input flex-1" min="12" max="28" value="18" step="1">
+                                    <span id="crfValue" class="stat-value text-sm w-8 text-center">18</span>
+                                </div>
+                                <div class="flex justify-between text-xs text-[var(--hexo-text-secondary)] mt-1">
+                                    <span>Lossless</span>
+                                    <span>High</span>
+                                    <span>Low</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="setting-label">Video Codec</label>
+                                <select id="advCodec" class="select-input">
+                                    <option value="h264">H.264 (libx264)</option>
+                                    <option value="h265">H.265 (libx265) — smaller file</option>
+                                    <option value="vp9">VP9 — web optimized</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="setting-label">Pixel Format</label>
+                                <select id="advPixelFormat" class="select-input">
+                                    <option value="yuv420p">yuv420p (best compatibility)</option>
+                                    <option value="yuv422p">yuv422p (higher chroma)</option>
+                                    <option value="yuv444p">yuv444p (maximum color)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="setting-label">Encoder Preset</label>
+                                <select id="advEncoderPreset" class="select-input">
+                                    <option value="slow">Slow (best compression)</option>
+                                    <option value="medium">Medium (balanced)</option>
+                                    <option value="fast">Fast (speed optimized)</option>
+                                    <option value="veryslow">Very Slow (maximum quality)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="setting-label">Additional Flags</label>
+                                <div class="flex items-center gap-3 mt-2">
+                                    <label class="flex items-center gap-2 text-sm cursor-pointer">
+                                        <input type="checkbox" id="advFaststart" checked class="accent-[var(--hexo-primary)]">
+                                        +faststart
+                                    </label>
+                                    <label class="flex items-center gap-2 text-sm cursor-pointer">
+                                        <input type="checkbox" id="advTuneFilm" checked class="accent-[var(--hexo-primary)]">
+                                        tune film
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preserve toggles -->
+                <div class="setting-group">
+                    <div class="flex flex-wrap gap-6">
+                        <label class="flex items-center gap-3 cursor-pointer" id="preserveFpsToggle">
+                            <div class="toggle-switch active" id="preserveFpsSwitch">
+                                <div class="toggle-knob"></div>
+                            </div>
+                            <span class="text-sm font-medium">Preserve Original FPS</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer" id="preserveMaxQualityToggle">
+                            <div class="toggle-switch active" id="preserveMaxQualitySwitch">
+                                <div class="toggle-knob"></div>
+                            </div>
+                            <span class="text-sm font-medium">Preserve Maximum Quality</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Process Button -->
+                <div class="mt-6 pt-2 flex flex-col sm:flex-row gap-4 items-center justify-between">
+                    <div class="flex items-center gap-3 text-sm text-[var(--hexo-text-secondary)]">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Settings optimized for TikTok's recommended upload guidelines</span>
+                    </div>
+                    <button id="processBtn" class="btn-primary text-base px-8 py-3 text-lg" disabled>
+                        <i class="fas fa-play-circle"></i>
+                        Process Video
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====== PROCESSING SECTION ====== -->
+        <section id="processing" class="section-hidden mb-10 fade-in">
+            <div class="glass-card p-6 sm:p-8">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="pulse-dot"></div>
+                    <h2 class="text-lg font-bold">Processing Your Video</h2>
+                    <span id="processingTimer" class="text-sm text-[var(--hexo-text-secondary)] ml-auto font-mono">00:00</span>
+                </div>
+                <div class="progress-bar mb-6">
+                    <div id="progressFill" class="progress-bar-fill" style="width:0%"></div>
+                </div>
+                <div id="progressSteps" class="space-y-1">
+                    <!-- populated by JS -->
+                </div>
+                <div class="mt-6 text-center text-sm text-[var(--hexo-text-secondary)]">
+                    <span id="processingStatusText">Initializing encoder...</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====== RESULTS SECTION ====== -->
+        <section id="results" class="section-hidden mb-10 fade-in">
+            <div class="glass-card p-6 sm:p-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-bold flex items-center gap-3">
+                        <i class="fas fa-check-circle text-[var(--hexo-success)]"></i>
+                        Optimization Complete
+                    </h2>
+                    <span class="badge badge-success text-sm">
+                        <i class="fas fa-check"></i> Ready
+                    </span>
+                </div>
+
+                <!-- Stats Grid -->
+                <div id="resultsStats" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+                    <!-- populated by JS -->
+                </div>
+
+                <!-- Before/After Comparison -->
+                <div class="mb-8">
+                    <h3 class="text-md font-semibold mb-4 flex items-center gap-2">
+                        <i class="fas fa-not-equal text-[var(--hexo-accent)]"></i>
+                        Before vs After Comparison
+                    </h3>
+                    <div id="comparisonContainer" class="comparison-container" style="aspect-ratio: 9/16; max-height: 600px;">
+                        <!-- populated by JS -->
+                    </div>
+                    <div class="flex justify-center gap-6 mt-3 text-xs text-[var(--hexo-text-secondary)]">
+                        <span><i class="fas fa-arrow-left text-[var(--hexo-accent)]"></i> Original</span>
+                        <span><i class="fas fa-arrows-alt-h"></i> Drag slider</span>
+                        <span>Optimized <i class="fas fa-arrow-right text-[var(--hexo-success)]"></i></span>
+                    </div>
+                </div>
+
+                <!-- Download + Watermark -->
+                <div class="border-t border-[var(--hexo-border)] pt-6">
+                    <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                        <div class="flex-1 w-full sm:w-auto">
+                            <div class="watermark-toggle" id="watermarkToggle">
+                                <div class="flex items-center gap-3 flex-1">
+                                    <i class="fas fa-watermark text-[var(--hexo-text-secondary)]"></i>
+                                    <div>
+                                        <div class="text-sm font-medium">Add HEXO METHOD watermark</div>
+                                        <div class="text-xs text-[var(--hexo-text-secondary)]">Small brand mark in corner</div>
+                                    </div>
+                                </div>
+                                <div id="watermarkSwitch" class="toggle-switch">
+                                    <div class="toggle-knob"></div>
+                                </div>
+                            </div>
+                            <div id="watermarkOptions" class="section-hidden mt-3 pl-2">
+                                <label class="text-xs text-[var(--hexo-text-secondary)] block mb-1">Watermark position</label>
+                                <select id="watermarkPosition" class="select-input text-sm py-2">
+                                    <option value="bottom-right">Bottom Right</option>
+                                    <option value="bottom-left">Bottom Left</option>
+                                    <option value="top-right">Top Right</option>
+                                    <option value="top-left">Top Left</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button id="downloadBtn" class="btn-primary text-base px-8 py-3">
+                            <i class="fas fa-download"></i>
+                            Download Optimized Video
+                        </button>
+                    </div>
+                    <p class="text-xs text-[var(--hexo-text-secondary)] mt-4 flex items-center gap-2">
+                        <i class="fas fa-trash-alt"></i>
+                        Your uploaded and processed files are automatically deleted after 1 hour for your privacy.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Process another -->
+            <div class="text-center mt-8">
+                <button id="processAnotherBtn" class="btn-secondary">
+                    <i class="fas fa-plus"></i>
+                    Process Another Video
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ====== FOOTER ====== -->
+    <footer class="border-t border-[var(--hexo-border)] py-8 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <span class="logo-hexo" style="font-size:1.2rem;">HEXO</span>
+                <span class="text-sm text-[var(--hexo-text-secondary)]">METHOD</span>
+                <span class="text-[var(--hexo-border)] mx-2">—</span>
+                <span class="text-sm text-[var(--hexo-text-secondary)]">TikTok Video Optimization</span>
+            </div>
+            <div class="flex items-center gap-4 text-xs text-[var(--hexo-text-secondary)]">
+                <span>© 2025 HEXO METHOD</span>
+                <span class="w-1 h-1 rounded-full bg-[var(--hexo-border)]"></span>
+                <span>Built for creators</span>
+                <span class="w-1 h-1 rounded-full bg-[var(--hexo-border)]"></span>
+                <span>v3.0</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ====== TOAST ====== -->
+    <div id="toast" class="toast">
+        <div class="flex items-center gap-3">
+            <i id="toastIcon" class="fas fa-check-circle text-[var(--hexo-success)]"></i>
+            <span id="toastMessage" class="text-sm"></span>
+        </div>
+    </div>
+
+    <!-- ====== JAVASCRIPT ====== -->
+    <script>
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // DATA LAYER
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        const qualityPresets = [
+            { id: 'max', label: 'Maximum Quality', icon: 'fa-crown', desc: 'CRF 16 — near lossless' },
+            { id: 'tiktok', label: 'TikTok Recommended', icon: 'fa-check', desc: 'CRF 18 — optimized for TikTok' },
+            { id: 'balanced', label: 'Balanced', icon: 'fa-balance-scale', desc: 'CRF 22 — good quality/size' },
+            { id: 'smaller', label: 'Smaller File', icon: 'fa-compress', desc: 'CRF 26 — smaller size' },
+        ];
+
+        const resolutionPresets = [
+            { id: '1080x1920', label: '1080 × 1920', icon: 'fa-mobile-alt', desc: '9:16 Vertical HD' },
+            { id: '720x1280', label: '720 × 1280', icon: 'fa-mobile', desc: '9:16 Vertical SD' },
+            { id: 'original', label: 'Keep Original', icon: 'fa-expand', desc: 'No resolution change' },
+        ];
+
+        const aspectRatioOptions = [
+            { id: 'crop', label: 'Crop to 9:16', icon: 'fa-crop-alt', desc: 'Center crop' },
+            { id: 'fit', label: 'Fit with Background', icon: 'fa-image', desc: 'Letterbox' },
+            { id: 'keep', label: 'Keep Original AR', icon: 'fa-arrows-alt', desc: 'No conversion' },
+        ];
+
+        const progressStepsData = [
+            { id: 'analyze', label: 'Analyzing source video', icon: 'fa-search' },
+            { id: 'encode', label: 'Encoding H.264 video', icon: 'fa-video' },
+            { id: 'audio', label: 'Encoding AAC audio', icon: 'fa-music' },
+            { id: 'mux', label: 'Muxing output with faststart', icon: 'fa-link' },
+            { id: 'finalize', label: 'Finalizing output', icon: 'fa-check' },
+        ];
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // STATE
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        const state = {
+            file: null,
+            fileUrl: null,
+            videoMeta: null,
+            selectedQuality: 'tiktok',
+            selectedResolution: 'original',
+            selectedAspectRatio: 'keep',
+            preserveFps: true,
+            preserveMaxQuality: true,
+            advancedOpen: false,
+            watermarkEnabled: false,
+            processing: false,
+            processed: false,
+            processingStartTime: null,
+            processingTimerInterval: null,
+            downloadUrl: null,
+        };
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // RENDER FUNCTIONS
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        function renderQualityPresets(presets) {
+            const container = document.getElementById('qualityPresets');
+            container.innerHTML = presets.map(p => `
+                <div class="preset-chip" data-quality="${p.id}" data-type="quality">
+                    <i class="fas ${p.icon} chip-icon"></i>
+                    ${p.label}
+                </div>
+            `).join('');
+            // activate selected
+            container.querySelectorAll('.preset-chip').forEach(el => {
+                if (el.dataset.quality === state.selectedQuality) el.classList.add('active');
+            });
+        }
+
+        function renderResolutionPresets(presets) {
+            const container = document.getElementById('resolutionPresets');
+            container.innerHTML = presets.map(p => `
+                <div class="preset-chip" data-resolution="${p.id}" data-type="resolution">
+                    <i class="fas ${p.icon} chip-icon"></i>
+                    ${p.label}
+                </div>
+            `).join('');
+            container.querySelectorAll('.preset-chip').forEach(el => {
+                if (el.dataset.resolution === state.selectedResolution) el.classList.add('active');
+            });
+        }
+
+        function renderAspectRatioOptions(options) {
+            const container = document.getElementById('aspectRatioOptions');
+            container.innerHTML = options.map(o => `
+                <div class="preset-chip" data-aspect="${o.id}" data-type="aspect">
+                    <i class="fas ${o.icon} chip-icon"></i>
+                    ${o.label}
+                </div>
+            `).join('');
+            container.querySelectorAll('.preset-chip').forEach(el => {
+                if (el.dataset.aspect === state.selectedAspectRatio) el.classList.add('active');
+            });
+        }
+
+        function renderVideoInfo(meta) {
+            const grid = document.getElementById('videoInfoGrid');
+            const items = [
+                { label: 'Resolution', value: `${meta.width} × ${meta.height}`, icon: 'fa-expand' },
+                { label: 'FPS', value: `${meta.fps}`, icon: 'fa-tachometer-alt' },
+                { label: 'Duration', value: meta.durationFormatted, icon: 'fa-clock' },
+                { label: 'File Size', value: meta.sizeFormatted, icon: 'fa-weight' },
+                { label: 'Video Codec', value: meta.videoCodec || 'H.264', icon: 'fa-video' },
+                { label: 'Audio Codec', value: meta.audioCodec || 'AAC', icon: 'fa-music' },
+                { label: 'Bitrate', value: meta.bitrateFormatted, icon: 'fa-tachometer' },
+                { label: 'Aspect Ratio', value: meta.aspectRatio || `${meta.width}:${meta.height}`, icon: 'fa-arrows-alt-h' },
+            ];
+            grid.innerHTML = items.map(item => `
+                <div class="info-item">
+                    <div class="flex items-center gap-2 text-xs text-[var(--hexo-text-secondary)] mb-1">
+                        <i class="fas ${item.icon}"></i>
+                        <span>${item.label}</span>
+                    </div>
+                    <div class="stat-value text-sm">${item.value}</div>
+                </div>
+            `).join('');
+
+            // Update file type badge
+            const ext = state.file.name.split('.').pop().toUpperCase();
+            document.getElementById('fileTypeBadge').innerHTML =
+                `<i class="fas fa-file-video"></i> ${ext} — ${meta.width}×${meta.height}`;
+
+            // Update size labels
+            document.getElementById('originalSizeLabel').textContent = meta.sizeFormatted;
+        }
+
+        function renderProgressSteps(steps) {
+            const container = document.getElementById('progressSteps');
+            container.innerHTML = steps.map((s, i) => `
+                <div class="progress-step" data-step="${s.id}" data-index="${i}">
+                    <div class="step-icon">
+                        <i class="fas ${s.icon}"></i>
+                    </div>
+                    <span class="text-sm">${s.label}</span>
+                    <span class="step-status ml-auto text-xs text-[var(--hexo-text-secondary)]"></span>
+                </div>
+            `).join('');
+        }
+
+        function renderResultsStats(original, optimized) {
+            const container = document.getElementById('resultsStats');
+            const savedBytes = original.sizeBytes - optimized.sizeBytes;
+            const savedPercent = original.sizeBytes > 0 ? ((savedBytes / original.sizeBytes) * 100).toFixed(1) : 0;
+            const stats = [
+                { label: 'Original Size', value: original.sizeFormatted, icon: 'fa-file' },
+                { label: 'Optimized Size', value: optimized.sizeFormatted, icon: 'fa-file-archive', accent: true },
+                { label: 'Space Saved', value: `${savedPercent}%`, icon: 'fa-save', color: 'var(--hexo-success)' },
+                { label: 'Original FPS', value: `${original.fps}`, icon: 'fa-tachometer-alt' },
+                { label: 'Output FPS', value: `${optimized.fps}`, icon: 'fa-tachometer-alt', accent: true },
+                { label: 'Original Res', value: `${original.width}×${original.height}`, icon: 'fa-expand' },
+                { label: 'Output Res', value: `${optimized.width}×${optimized.height}`, icon: 'fa-expand', accent: true },
+                { label: 'Codec', value: 'H.264 / AAC', icon: 'fa-code' },
+            ];
+            container.innerHTML = stats.map(s => `
+                <div class="info-item" style="${s.color ? `border-left: 3px solid ${s.color}` : ''}">
+                    <div class="flex items-center gap-2 text-xs text-[var(--hexo-text-secondary)] mb-1">
+                        <i class="fas ${s.icon}"></i>
+                        <span>${s.label}</span>
+                    </div>
+                    <div class="stat-value text-sm ${s.accent ? 'text-[var(--hexo-primary)]' : ''}">${s.value}</div>
+                </div>
+            `).join('');
+            // Update file size bar
+            const origMB = original.sizeBytes / (1024 * 1024);
+            const optMB = optimized.sizeBytes / (1024 * 1024);
+            const pct = origMB > 0 ? (optMB / origMB) * 100 : 100;
+            document.getElementById('optimizedBarFill').style.width = `${Math.min(pct, 100)}%`;
+            document.getElementById('optimizedSizeLabel').textContent = optimized.sizeFormatted;
+        }
+
+        function renderComparison(originalUrl, optimizedUrl, meta) {
+            const container = document.getElementById('comparisonContainer');
+            // Use same URL for both since we can't actually re-encode in browser without FFmpeg.wasm
+            // In production, optimizedUrl would be the processed file
+            const displayUrl = optimizedUrl || originalUrl;
+            container.innerHTML = `
+                <div class="comparison-label original">
+                    <i class="fas fa-circle text-[var(--hexo-accent)]" style="font-size:8px;vertical-align:middle;"></i> Original
+                </div>
+                <div class="comparison-label optimized">
+                    Optimized <i class="fas fa-circle text-[var(--hexo-success)]" style="font-size:8px;vertical-align:middle;"></i>
+                </div>
+                <video id="compareVideo" src="${originalUrl}" muted loop playsinline preload="auto"></video>
+                <div class="comparison-overlay" id="comparisonOverlay">
+                    <video id="compareVideoOverlay" src="${optimizedUrl || originalUrl}" muted loop playsinline preload="auto"></video>
+                </div>
+                <div class="comparison-slider" id="comparisonSlider"></div>
+                <div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-3">
+                    <button id="comparePlayBtn" class="text-xs px-3 py-1.5 rounded-lg bg-black/60 backdrop-blur-sm text-white border border-white/20 hover:bg-black/80 transition-colors">
+                        <i class="fas fa-play"></i> Play Both
+                    </button>
+                </div>
+            `;
+            // Set up comparison slider
+            const slider = document.getElementById('comparisonSlider');
+            const overlay = document.getElementById('comparisonOverlay');
+            let isDragging = false;
+
+            function setSliderPos(e) {
+                const rect = container.getBoundingClientRect();
+                let x = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
+                x = Math.max(0, Math.min(x, rect.width));
+                const pct = (x / rect.width) * 100;
+                overlay.style.width = pct + '%';
+                slider.style.left = pct + '%';
+            }
+
+            slider.addEventListener('mousedown', () => isDragging = true);
+            document.addEventListener('mousemove', (e) => { if (isDragging) { e.preventDefault();
+                    setSliderPos(e); } });
+            document.addEventListener('mouseup', () => isDragging = false);
+            slider.addEventListener('touchstart', () => isDragging = true);
+            document.addEventListener('touchmove', (e) => { if (isDragging) { e.preventDefault();
+                    setSliderPos(e); } });
+            document.addEventListener('touchend', () => isDragging = false);
+
+            // Play button
+            document.getElementById('comparePlayBtn').addEventListener('click', function() {
+                const vids = document.querySelectorAll('#comparisonContainer video');
+                const allPaused = Array.from(vids).every(v => v.paused);
+                vids.forEach(v => allPaused ? v.play() : v.pause());
+                this.innerHTML = allPaused ?
+                    '<i class="fas fa-pause"></i> Pause Both' :
+                    '<i class="fas fa-play"></i> Play Both';
+            });
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // HELPER FUNCTIONS
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        function formatFileSize(bytes) {
+            if (!bytes || bytes === 0) return '0 B';
+            const units = ['B', 'KB', 'MB', 'GB'];
+            let i = 0;
+            let size = bytes;
+            while (size >= 1024 && i < units.length - 1) { size /= 1024;
+                i++; }
+            return `${size.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+        }
+
+        function formatDuration(seconds) {
+            if (!seconds || isNaN(seconds)) return '0:00';
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function formatBitrate(bps) {
+            if (!bps || bps === 0) return '—';
+            const kbps = bps / 1000;
+            return `${kbps.toFixed(0)} kbps`;
+        }
+
+        function estimateOutputSize(meta, quality) {
+            // UI estimate only; final size is measured after real FFmpeg processing.
+            const targetMbps = { max: 12, tiktok: 8, balanced: 5, smaller: 3 }[quality] || 8;
+            const audioMbps = 0.192;
+            return Math.round((targetMbps + audioMbps) * 1000 * 1000 / 8 * (meta.duration || 0));
+        }
+
+        function detectFpsFromFile(file) {
+            return new Promise((resolve) => {
+                const video = document.createElement('video');
+                video.preload = 'metadata';
+                video.onloadedmetadata = function() {
+                    let fps = 30;
+                    if (video.duration > 0) {
+                        // Try to detect via mozParsedFrames or webkitDecodedFrameCount
+                        try {
+                            // Use a heuristic: check if video seems high-frame-rate based on metadata
+                            const height = video.videoHeight;
+                            const width = video.videoWidth;
+                            // Common TikTok FPS values: 30, 60, 90, 120
+                            // We'll default to 60 for HD content, 30 for SD
+                            if (height >= 720) {
+                                fps = 60;
+                            } else {
+                                fps = 30;
+                            }
+                        } catch (e) {
+                            fps = 30;
+                        }
+                    }
+                    URL.revokeObjectURL(video.src);
+                    resolve(fps);
+                };
+                video.onerror = function() {
+                    resolve(30);
+                };
+                video.src = URL.createObjectURL(file);
+                video.load();
+                // timeout fallback
+                setTimeout(() => {
+                    if (!video.duration) resolve(30);
+                }, 2000);
+            });
+        }
+
+        async function extractVideoMeta(file) {
+            const fd = new FormData();
+            fd.append('video', file);
+            const res = await fetch('/api/analyze', { method: 'POST', body: fd });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Could not analyze video');
+            return data;
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toastIcon');
+            const msg = document.getElementById('toastMessage');
+            msg.textContent = message;
+            toast.className = `toast ${type}`;
+            if (type === 'success') {
+                icon.className = 'fas fa-check-circle text-[var(--hexo-success)]';
+            } else if (type === 'error') {
+                icon.className = 'fas fa-exclamation-circle text-[var(--hexo-danger)]';
+            } else {
+                icon.className = 'fas fa-info-circle text-[var(--hexo-accent)]';
+            }
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 4000);
+        }
+
+        function showSection(id) {
+            document.querySelectorAll('section[id]').forEach(sec => {
+                const el = document.getElementById(sec.id);
+                if (el && el.id !== 'upload') {
+                    el.classList.add('section-hidden');
+                    el.classList.remove('fade-in');
+                }
+            });
+            const target = document.getElementById(id);
+            if (target) {
+                target.classList.remove('section-hidden');
+                target.classList.add('fade-in');
+            }
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // SIMULATED PROCESSING ENGINE
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        async function startProcessing() {
+            if (!state.file || !state.videoMeta || state.processing) return;
+            state.processing = true;
+            state.processed = false;
+            document.getElementById('processBtn').disabled = true;
+            showSection('processing');
+
+            const steps = document.querySelectorAll('.progress-step');
+            steps.forEach(s => { s.classList.remove('active', 'done'); s.querySelector('.step-status').textContent = ''; });
+            document.getElementById('progressFill').style.width = '0%';
+            document.getElementById('processingStatusText').textContent = 'Uploading video to HEXO METHOD...';
+
+            const startTime = Date.now();
+            state.processingStartTime = startTime;
+            if (state.processingTimerInterval) clearInterval(state.processingTimerInterval);
+            state.processingTimerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const m = Math.floor(elapsed / 60), s = elapsed % 60;
+                document.getElementById('processingTimer').textContent =
+                    `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+            }, 500);
+
+            try {
+                const fd = new FormData();
+                fd.append('video', state.file);
+                fd.append('quality', state.selectedQuality);
+                fd.append('resolution', state.selectedResolution);
+                fd.append('aspectRatio', state.selectedAspectRatio);
+                fd.append('preserveFps', state.preserveFps ? 'true' : 'false');
+                fd.append('preserveMaxQuality', state.preserveMaxQuality ? 'true' : 'false');
+
+                // Read advanced controls if present.
+                const advFps = document.getElementById('advFps')?.value;
+                const advVideoBitrate = document.getElementById('advVideoBitrate')?.value;
+                const advAudioBitrate = document.getElementById('advAudioBitrate')?.value;
+                if (advFps) fd.append('outputFps', advFps);
+                if (advVideoBitrate) fd.append('videoBitrate', advVideoBitrate);
+                if (advAudioBitrate) fd.append('audioBitrate', advAudioBitrate);
+
+                const res = await fetch('/api/process', { method: 'POST', body: fd });
+                const job = await res.json();
+                if (!res.ok) throw new Error(job.error || 'Could not start processing');
+
+                const timer = setInterval(async () => {
+                    try {
+                        const r = await fetch(`/api/process/${job.jobId}/status`, { cache: 'no-store' });
+                        const st = await r.json();
+                        if (!r.ok) throw new Error(st.error || 'Status request failed');
+
+                        document.getElementById('progressFill').style.width = `${Math.min(st.progress || 0, 100)}%`;
+                        document.getElementById('processingStatusText').textContent = st.status || 'Processing...';
+
+                        const p = st.progress || 0;
+                        const stepIds = ['analyze','encode','audio','mux','finalize'];
+                        const doneCount = p >= 100 ? 5 : p >= 90 ? 4 : p >= 5 ? 2 : 1;
+                        steps.forEach((el,i) => {
+                            el.classList.toggle('done', i < doneCount);
+                            el.classList.toggle('active', i === Math.min(doneCount,4) && p < 100);
+                            el.querySelector('.step-status').textContent = i < doneCount ? '✓ Done' : (i === doneCount && p < 100 ? 'Processing...' : '');
+                        });
+
+                        if (st.state === 'error') {
+                            clearInterval(timer);
+                            throw new Error(st.error || 'FFmpeg processing failed');
+                        }
+
+                        if (st.state === 'done') {
+                            clearInterval(timer);
+                            state.processing = false;
+                            state.processed = true;
+                            state.downloadUrl = st.download;
+                            state.optimizedMeta = {
+                                sizeBytes: st.outputMeta.sizeBytes,
+                                sizeFormatted: st.outputMeta.sizeFormatted,
+                                fps: st.outputMeta.fps,
+                                width: st.outputMeta.width,
+                                height: st.outputMeta.height
+                            };
+                            clearInterval(state.processingTimerInterval);
+                            document.getElementById('progressFill').style.width = '100%';
+                            document.getElementById('processingStatusText').textContent = 'Optimization complete!';
+                            renderResultsStats(state.videoMeta, state.optimizedMeta);
+                            renderComparison(state.fileUrl, st.download, state.videoMeta);
+                            document.getElementById('downloadBtn').onclick = () => { window.location.href = st.download; };
+                            showSection('results');
+                            showToast('Video optimized successfully!', 'success');
+                        }
+                    } catch (e) {
+                        clearInterval(timer);
+                        clearInterval(state.processingTimerInterval);
+                        state.processing = false;
+                        document.getElementById('processBtn').disabled = false;
+                        document.getElementById('processingStatusText').textContent = 'Processing failed.';
+                        showToast(e.message || 'Processing failed', 'error');
+                    }
+                }, 700);
+            } catch (e) {
+                clearInterval(state.processingTimerInterval);
+                state.processing = false;
+                document.getElementById('processBtn').disabled = false;
+                document.getElementById('processingStatusText').textContent = 'Processing failed.';
+                showToast(e.message || 'Processing failed', 'error');
+            }
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // MAIN MOUNT & EVENT DELEGATION
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        function mountApp() {
+            renderQualityPresets(qualityPresets);
+            renderResolutionPresets(resolutionPresets);
+            renderAspectRatioOptions(aspectRatioOptions);
+            renderProgressSteps(progressStepsData);
+
+            // Set initial estimated size display
+            document.getElementById('estimatedSize').textContent = 'Upload a video to estimate';
+
+            // Event delegation for all interactive elements
+            document.addEventListener('click', function(e) {
+                const target = e.target.closest('[data-quality]');
+                if (target && target.dataset.type === 'quality') {
+                    state.selectedQuality = target.dataset.quality;
+                    document.querySelectorAll('[data-type="quality"]').forEach(el => el.classList.remove(
+                    'active'));
+                    target.classList.add('active');
+                    updateEstimatedSize();
+                    updateAdvancedFromPreset();
+                    return;
+                }
+
+                const resTarget = e.target.closest('[data-resolution]');
+                if (resTarget && resTarget.dataset.type === 'resolution') {
+                    state.selectedResolution = resTarget.dataset.resolution;
+                    document.querySelectorAll('[data-type="resolution"]').forEach(el => el.classList.remove(
+                    'active'));
+                    resTarget.classList.add('active');
+                    updateResolutionFields();
+                    updateEstimatedSize();
+                    return;
+                }
+
+                const aspectTarget = e.target.closest('[data-aspect]');
+                if (aspectTarget && aspectTarget.dataset.type === 'aspect') {
+                    state.selectedAspectRatio = aspectTarget.dataset.aspect;
+                    document.querySelectorAll('[data-type="aspect"]').forEach(el => el.classList.remove('active'));
+                    aspectTarget.classList.add('active');
+                    return;
+                }
+
+                // Preserve FPS toggle
+                const fpsToggle = e.target.closest('#preserveFpsToggle');
+                if (fpsToggle) {
+                    state.preserveFps = !state.preserveFps;
+                    document.getElementById('preserveFpsSwitch').classList.toggle('active', state.preserveFps);
+                    return;
+                }
+
+                // Preserve Max Quality toggle
+                const maxToggle = e.target.closest('#preserveMaxQualityToggle');
+                if (maxToggle) {
+                    state.preserveMaxQuality = !state.preserveMaxQuality;
+                    document.getElementById('preserveMaxQualitySwitch').classList.toggle('active', state
+                        .preserveMaxQuality);
+                    if (state.preserveMaxQuality) {
+                        state.selectedQuality = 'max';
+                        document.querySelectorAll('[data-type="quality"]').forEach(el => el.classList.remove(
+                        'active'));
+                        document.querySelector('[data-quality="max"]')?.classList.add('active');
+                        updateAdvancedFromPreset();
+                        updateEstimatedSize();
+                    }
+                    return;
+                }
+
+                // Watermark toggle
+                const wmToggle = e.target.closest('#watermarkToggle');
+                if (wmToggle) {
+                    state.watermarkEnabled = !state.watermarkEnabled;
+                    document.getElementById('watermarkSwitch').classList.toggle('active', state.watermarkEnabled);
+                    document.getElementById('watermarkOptions').classList.toggle('section-hidden', !state
+                        .watermarkEnabled);
+                    return;
+                }
+
+                // TikTok Best Quality button
+                const bestBtn = e.target.closest('#tiktokBestQualityBtn');
+                if (bestBtn) {
+                    applyTikTokBestQuality();
+                    return;
+                }
+
+                // Process button
+                const processBtn = e.target.closest('#processBtn');
+                if (processBtn && !processBtn.disabled && state.file) {
+                    startProcessing();
+                    return;
+                }
+
+                // Download button
+                const downloadBtn = e.target.closest('#downloadBtn');
+                if (downloadBtn && state.downloadUrl) {
+                    downloadVideo();
+                    return;
+                }
+
+                // Process Another
+                const anotherBtn = e.target.closest('#processAnotherBtn');
+                if (anotherBtn) {
+                    resetApp();
+                    return;
+                }
+
+                // Toggle advanced
+                const advBtn = e.target.closest('#toggleAdvancedBtn');
+                if (advBtn) {
+                    state.advancedOpen = !state.advancedOpen;
+                    document.getElementById('advancedPanel').classList.toggle('section-hidden', !state.advancedOpen);
+                    document.getElementById('advancedChevron').classList.toggle('fa-chevron-down', state.advancedOpen);
+                    document.getElementById('advancedChevron').classList.toggle('fa-chevron-up', !state.advancedOpen);
+                    document.getElementById('advancedToggleText').textContent = state.advancedOpen ? 'Hide' : 'Show';
+                    return;
+                }
+
+                // Smooth scroll for nav links
+                const navLink = e.target.closest('[data-nav]');
+                if (navLink) {
+                    e.preventDefault();
+                    const href = navLink.getAttribute('href');
+                    if (href && href.startsWith('#')) {
+                        const el = document.querySelector(href);
+                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
+            });
+
+            // CRF slider
+            document.getElementById('advCrf').addEventListener('input', function() {
+                document.getElementById('crfValue').textContent = this.value;
+            });
+
+            // Advanced fields update estimated size
+            document.querySelectorAll('#advancedPanel input, #advancedPanel select').forEach(el => {
+                el.addEventListener('change', () => updateEstimatedSize());
+                el.addEventListener('input', () => updateEstimatedSize());
+            });
+
+            // Drop zone events
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+
+            dropZone.addEventListener('click', function(e) {
+                if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'LABEL') {
+                    fileInput.click();
+                }
+            });
+
+            dropZone.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.classList.add('drag-over');
+            });
+
+            dropZone.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                this.classList.remove('drag-over');
+            });
+
+            dropZone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.classList.remove('drag-over');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) handleFile(files[0]);
+            });
+
+            fileInput.addEventListener('change', function(e) {
+                if (this.files.length > 0) handleFile(this.files[0]);
+            });
+
+            // Comparison slider mouse move handled in renderComparison
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // APPLICATION LOGIC
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        function handleFile(file) {
+            const validTypes = ['video/mp4', 'video/quicktime', 'video/x-matroska', 'video/webm'];
+            const validExts = ['mp4', 'mov', 'mkv', 'webm'];
+            const ext = file.name.split('.').pop().toLowerCase();
+
+            if (!validTypes.includes(file.type) && !validExts.includes(ext)) {
+                showToast('Unsupported format. Please use MP4, MOV, MKV, or WEBM.', 'error');
+                return;
+            }
+
+            if (file.size === 0) {
+                showToast('The file appears to be empty.', 'error');
+                return;
+            }
+
+            state.file = file;
+            state.fileUrl = URL.createObjectURL(file);
+
+            // Show loading state on drop zone
+            const dropZone = document.getElementById('dropZone');
+            dropZone.querySelector('.drop-zone-content').innerHTML = `
+                <div class="flex items-center justify-center gap-4 py-4">
+                    <i class="fas fa-spinner fa-pulse text-2xl text-[var(--hexo-primary)]"></i>
+                    <span class="text-lg font-medium">Analyzing video...</span>
+                </div>
+            `;
+
+            extractVideoMeta(file).then(meta => {
+                state.videoMeta = meta;
+                // Update drop zone to show success
+                dropZone.querySelector('.drop-zone-content').innerHTML = `
+                    <div class="flex items-center justify-center gap-4 py-2">
+                        <div class="w-12 h-12 rounded-full bg-[rgba(0,230,118,0.1)] border border-[rgba(0,230,118,0.2)] flex items-center justify-center">
+                            <i class="fas fa-check-circle text-2xl text-[var(--hexo-success)]"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="font-semibold">${file.name}</div>
+                            <div class="text-sm text-[var(--hexo-text-secondary)]">${meta.sizeFormatted} · ${meta.width}×${meta.height} · ${meta.fps} FPS · ${meta.durationFormatted}</div>
+                        </div>
+                        <button class="btn-ghost text-sm text-[var(--hexo-primary)]" id="changeFileBtn">
+                            <i class="fas fa-exchange-alt"></i> Change
+                        </button>
+                    </div>
+                `;
+                document.getElementById('changeFileBtn')?.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    document.getElementById('fileInput').click();
+                });
+
+                // Show video info
+                renderVideoInfo(meta);
+                showSection('videoInfo');
+                document.getElementById('videoInfo').classList.remove('section-hidden');
+                document.getElementById('videoInfo').classList.add('fade-in');
+
+                // Show settings
+                showSection('settings');
+                document.getElementById('settings').classList.remove('section-hidden');
+                document.getElementById('settings').classList.add('fade-in');
+
+                // Enable process button
+                document.getElementById('processBtn').disabled = false;
+
+                // Update estimated size
+                updateEstimatedSize();
+
+                // Auto-detect best settings
+                applyTikTokBestQuality();
+
+                showToast(`${file.name} loaded successfully`, 'success');
+
+                // Scroll to settings
+                setTimeout(() => {
+                    document.getElementById('settings').scrollIntoView({ behavior: 'smooth',
+                        block: 'start' });
+                }, 300);
+
+            }).catch(err => {
+                dropZone.querySelector('.drop-zone-content').innerHTML = `
+                    <div class="py-4">
+                        <i class="fas fa-exclamation-triangle text-2xl text-[var(--hexo-danger)] mb-2"></i>
+                        <p class="text-[var(--hexo-danger)]">Could not read video metadata</p>
+                        <p class="text-sm text-[var(--hexo-text-secondary)] mt-1">Try a different file</p>
+                    </div>
+                `;
+                showToast('Error reading video file. Try a different file.', 'error');
+            });
+        }
+
+        function updateEstimatedSize() {
+            if (!state.videoMeta) return;
+            const size = estimateOutputSize(state.videoMeta, state.selectedQuality);
+            document.getElementById('estimatedSize').textContent = formatFileSize(size);
+
+            // Update bar
+            const origMB = state.videoMeta.sizeBytes / (1024 * 1024);
+            const optMB = size / (1024 * 1024);
+            const pct = origMB > 0 ? (optMB / origMB) * 100 : 100;
+            document.getElementById('optimizedBarFill').style.width = `${Math.min(pct, 100)}%`;
+            document.getElementById('optimizedSizeLabel').textContent = formatFileSize(size);
+        }
+
+        function updateResolutionFields() {
+            const res = state.selectedResolution;
+            const meta = state.videoMeta;
+            if (res === '1080x1920') {
+                document.getElementById('advWidth').value = 1080;
+                document.getElementById('advHeight').value = 1920;
+            } else if (res === '720x1280') {
+                document.getElementById('advWidth').value = 720;
+                document.getElementById('advHeight').value = 1280;
+            } else if (res === 'original' && meta) {
+                document.getElementById('advWidth').value = meta.width;
+                document.getElementById('advHeight').value = meta.height;
+            }
+        }
+
+        function updateAdvancedFromPreset() {
+            const quality = state.selectedQuality;
+            const crfValues = { max: 16, tiktok: 18, balanced: 22, smaller: 26 };
+            const crf = crfValues[quality] || 18;
+            document.getElementById('advCrf').value = crf;
+            document.getElementById('crfValue').textContent = crf;
+
+            const bitrates = { max: 12000, tiktok: 8000, balanced: 5000, smaller: 3000 };
+            document.getElementById('advVideoBitrate').value = bitrates[quality] || 8000;
+
+            if (quality === 'max') {
+                document.getElementById('advEncoderPreset').value = 'slow';
+            } else if (quality === 'tiktok') {
+                document.getElementById('advEncoderPreset').value = 'medium';
+            } else {
+                document.getElementById('advEncoderPreset').value = 'medium';
+            }
+
+            updateEstimatedSize();
+        }
+
+        function applyTikTokBestQuality() {
+            state.selectedQuality = 'max';
+            state.selectedResolution = '1080x1920';
+            state.preserveFps = true;
+            state.preserveMaxQuality = true;
+
+            // Update UI chips
+            document.querySelectorAll('[data-type="quality"]').forEach(el => el.classList.remove('active'));
+            document.querySelector('[data-quality="max"]')?.classList.add('active');
+
+            document.querySelectorAll('[data-type="resolution"]').forEach(el => el.classList.remove('active'));
+            document.querySelector('[data-resolution="1080x1920"]')?.classList.add('active');
+
+            document.getElementById('preserveFpsSwitch').classList.add('active');
+            document.getElementById('preserveMaxQualitySwitch').classList.add('active');
+
+            // Update advanced fields
+            updateAdvancedFromPreset();
+            updateResolutionFields();
+
+            // Update FPS dropdown to auto
+            document.getElementById('advFps').value = 'auto';
+
+            showToast('TikTok Best Quality settings applied', 'info');
+        }
+
+        function downloadVideo() {
+            if (!state.downloadUrl) return;
+
+            const meta = state.videoMeta;
+            const optimizedMeta = state.optimizedMeta || meta;
+            const quality = state.selectedQuality;
+
+            // Create a download link
+            const a = document.createElement('a');
+            a.href = state.downloadUrl;
+            const ext = state.file.name.split('.').pop();
+            const baseName = state.file.name.replace(/\.[^.]+$/, '');
+            const qualityLabel = quality.charAt(0).toUpperCase() + quality.slice(1);
+            const watermarkSuffix = state.watermarkEnabled ? '-wm' : '';
+            a.download = `${baseName}-HEXO-${qualityLabel}${watermarkSuffix}.${ext}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            showToast('Download started! Your video is ready.', 'success');
+        }
+
+        function resetApp() {
+            // Revoke old URLs
+            if (state.fileUrl) URL.revokeObjectURL(state.fileUrl);
+            if (state.downloadUrl && state.downloadUrl !== state.fileUrl) URL.revokeObjectURL(state.downloadUrl);
+
+            state.file = null;
+            state.fileUrl = null;
+            state.videoMeta = null;
+            state.optimizedMeta = null;
+            state.downloadUrl = null;
+            state.processing = false;
+            state.processed = false;
+            state.watermarkEnabled = false;
+
+            if (state.processingTimerInterval) {
+                clearInterval(state.processingTimerInterval);
+                state.processingTimerInterval = null;
+            }
+
+            // Reset UI
+            document.getElementById('fileInput').value = '';
+
+            // Reset drop zone
+            document.getElementById('dropZone').querySelector('.drop-zone-content').innerHTML = `
+                <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-[var(--hexo-surface-2)] border border-[var(--hexo-border)] flex items-center justify-center">
+                    <i class="fas fa-cloud-upload-alt text-3xl text-[var(--hexo-primary)]"></i>
+                </div>
+                <h2 class="text-xl sm:text-2xl font-bold mb-2">Drop your video here</h2>
+                <p class="text-[var(--hexo-text-secondary)] mb-6">or click to browse — MP4, MOV, MKV, WEBM supported</p>
+                <div class="flex flex-wrap justify-center gap-3 mb-4">
+                    <span class="badge badge-info"><i class="fas fa-file-video"></i> MP4</span>
+                    <span class="badge badge-info"><i class="fas fa-file-video"></i> MOV</span>
+                    <span class="badge badge-info"><i class="fas fa-file-video"></i> MKV</span>
+                    <span class="badge badge-info"><i class="fas fa-file-video"></i> WEBM</span>
+                </div>
+                <label class="btn-primary cursor-pointer inline-flex">
+                    <i class="fas fa-folder-open"></i>
+                    Choose Video
+                    <input type="file" id="fileInput" accept="video/mp4,video/quicktime,video/x-matroska,video/webm" class="hidden">
+                </label>
+                <p class="text-xs text-[var(--hexo-text-secondary)] mt-4 opacity-60">
+                    <i class="fas fa-lock"></i> Your files are processed securely and never stored permanently
+                </p>
+            `;
+
+            // Re-bind file input
+            document.getElementById('fileInput').addEventListener('change', function(e) {
+                if (this.files.length > 0) handleFile(this.files[0]);
+            });
+
+            // Hide all sections except upload
+            document.querySelectorAll('section[id]').forEach(sec => {
+                if (sec.id !== 'upload') {
+                    sec.classList.add('section-hidden');
+                }
+            });
+
+            document.getElementById('processBtn').disabled = true;
+            document.getElementById('estimatedSize').textContent = 'Upload a video to estimate';
+            document.getElementById('optimizedBarFill').style.width = '100%';
+            document.getElementById('optimizedSizeLabel').textContent = '—';
+            document.getElementById('originalSizeLabel').textContent = 'Original';
+
+            // Reset settings to defaults
+            state.selectedQuality = 'tiktok';
+            state.selectedResolution = 'original';
+            state.selectedAspectRatio = 'keep';
+            state.preserveFps = true;
+            state.preserveMaxQuality = true;
+            state.advancedOpen = false;
+
+            document.getElementById('advancedPanel').classList.add('section-hidden');
+            document.getElementById('advancedChevron').classList.add('fa-chevron-down');
+            document.getElementById('advancedChevron').classList.remove('fa-chevron-up');
+            document.getElementById('advancedToggleText').textContent = 'Show';
+
+            document.getElementById('watermarkSwitch').classList.remove('active');
+            document.getElementById('watermarkOptions').classList.add('section-hidden');
+            document.getElementById('preserveFpsSwitch').classList.add('active');
+            document.getElementById('preserveMaxQualitySwitch').classList.add('active');
+
+            // Re-render presets
+            document.querySelectorAll('[data-type="quality"]').forEach(el => el.classList.remove('active'));
+            document.querySelector('[data-quality="tiktok"]')?.classList.add('active');
+            document.querySelectorAll('[data-type="resolution"]').forEach(el => el.classList.remove('active'));
+            document.querySelector('[data-resolution="original"]')?.classList.add('active');
+            document.querySelectorAll('[data-type="aspect"]').forEach(el => el.classList.remove('active'));
+            document.querySelector('[data-aspect="keep"]')?.classList.add('active');
+
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            showToast('Ready to process a new video', 'info');
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // INIT
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        document.addEventListener('DOMContentLoaded', mountApp);
+    </script>
+</body>
+</html>
