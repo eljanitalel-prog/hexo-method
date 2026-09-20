@@ -19,7 +19,7 @@ const upload = multer({
 });
 
 app.use(express.static(path.join(__dirname)));
-app.get('/health', (_req, res) => res.json({ ok: true, ffmpeg: true, version: '5.2' }));
+app.get('/health', (_req, res) => res.json({ ok: true, ffmpeg: true, version: '5.3' }));
 
 function num(v, fallback, min, max) {
   const n = Number(v);
@@ -115,7 +115,7 @@ function ffmpegArgs(input, output, opts) {
     args.push('-maxrate',`${br}k`,'-bufsize',`${br * 2}k`);
   }
 
-  args.push('-progress','pipe:1','-nostats',output);
+  args.push('-stats_period','1','-progress','pipe:1','-nostats',output);
   return args;
 }
 
@@ -166,7 +166,15 @@ app.post('/api/process', upload.single('video'), async (req, res) => {
       videoBitrate, useBitrate
     });
 
+    const startedAt = Date.now();
     const proc = spawn('ffmpeg', args, { stdio:['ignore','pipe','pipe'] });
+    const heartbeat = setInterval(() => {
+      if (!proc.killed && !res.writableEnded) {
+        const elapsed = Math.round((Date.now() - startedAt) / 1000);
+        send({ type:'progress', stage:'encode', progress:5, message:`Encoding H.264… working (${elapsed}s elapsed)` });
+      }
+    }, 5000);
+    heartbeat.unref();
     let stderr = '';
     proc.stderr.on('data', d => {
       stderr += d.toString();
@@ -184,14 +192,17 @@ app.post('/api/process', upload.single('video'), async (req, res) => {
         if (k === 'out_time_ms') outTime = Number(v) / 1e6;
         if (k === 'progress' && outTime > 0 && originalMeta.duration > 0) {
           const pct = Math.min(98, 5 + (outTime / originalMeta.duration) * 90);
-          send({ type:'progress', stage:'encode', progress:Number(pct.toFixed(1)), message:`Encoding H.264… ${pct.toFixed(0)}%` });
+          const speed = lines.find(x => x.startsWith('speed='))?.split('=')[1] || '';
+          const fps = lines.find(x => x.startsWith('fps='))?.split('=')[1] || '';
+          const elapsed = Math.round((Date.now() - startedAt) / 1000);
+          send({ type:'progress', stage:'encode', progress:Number(pct.toFixed(1)), message:`Encoding H.264… ${pct.toFixed(0)}%${speed ? ` • ${speed}` : ''}${fps ? ` • ${fps} fps` : ''} • ${elapsed}s` });
         }
       }
     });
 
     const code = await new Promise((resolve, reject) => {
       proc.on('error', reject);
-      proc.on('close', resolve);
+      proc.on('close', code => { clearInterval(heartbeat); resolve(code); });
     });
 
     if (code !== 0) {
@@ -247,6 +258,6 @@ app.use((err, _req, res, _next) => {
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`HEXO METHOD v5.2 running on port ${PORT}`);
-  console.log('FFmpeg real processing enabled; video watermark disabled; original FPS preservation enabled.');
+  console.log(`HEXO METHOD v5.3 running on port ${PORT}`);
+  console.log('FFmpeg real processing enabled; video watermark disabled; original FPS preservation enabled; live FFmpeg progress enabled.');
 });
